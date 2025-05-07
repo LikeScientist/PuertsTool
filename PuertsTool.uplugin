@@ -1,0 +1,29 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "PuertsTool",
+	"Description": "PuertsTool",
+	"Category": "Other",
+	"CreatedBy": "Like",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": true,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "PuertsTool",
+			"Type": "Editor",
+			"LoadingPhase": "PostEngineInit",
+			"Dependencies": [
+				"AssetTools",
+				"ContentBrowser",
+				"BlueprintEditor"
+			]
+		}
+	]
+}
