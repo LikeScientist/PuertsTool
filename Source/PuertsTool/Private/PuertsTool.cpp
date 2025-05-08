@@ -95,19 +95,22 @@ void FPuertsToolModule::HandleButtonClick(bool bForceOverwrite)
 		// 获取所有打开的蓝图编辑器（返回的是TSharedRef）
 		const TArray<TSharedRef<IBlueprintEditor>>& BlueprintEditors = BlueprintEditorModule->GetBlueprintEditors();
 
-		// 获取第一个活动的蓝图编辑器
+		TSharedPtr<IBlueprintEditor> FocusedEditor;
+		double maxLastActivationTime = 0.0;
+		// 获取最近最新活动的蓝图编辑器
 		for (const TSharedRef<IBlueprintEditor>& Editor : BlueprintEditors)
 		{
-			// 检查编辑器是否有效
-			/*if (Editor.IsValid())
-			{*/
-				// 获取编辑器中的蓝图对象
-				if (FBlueprintEditor* BlueprintEditor = static_cast<FBlueprintEditor*>(&Editor.Get()))
-				{
-					Blueprint = BlueprintEditor->GetBlueprintObj();
-					break;
-				}
-			//}
+			if (Editor->GetLastActivationTime() > maxLastActivationTime)
+			{
+				maxLastActivationTime = Editor->GetLastActivationTime();
+				FocusedEditor = Editor;				
+			}
+		}
+		
+		// 获取编辑器中的蓝图对象
+		if (FBlueprintEditor* BlueprintEditor = static_cast<FBlueprintEditor*>(FocusedEditor.Get()))
+		{
+			Blueprint = BlueprintEditor->GetBlueprintObj();
 		}
 	}
 
