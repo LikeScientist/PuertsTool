@@ -135,10 +135,11 @@ void FPuertsToolModule::HandleButtonClick(bool bForceOverwrite)
 			RightS.ParseIntoArray(stringArray, TEXT("/"), false);
 			FString FileName = stringArray[stringArray.Num() - 1];
 
-			RightS = RightS.Replace(TEXT("BP_"), TEXT("")).Replace(*FileName, *(TEXT("TS_") + FileName));
+			FileName = RightS.Replace(TEXT("BP_"), TEXT(""));
+			RightS = FileName.Replace(*FileName, *(TEXT("TS_") + FileName));
 
 			// 处理模板
-			FString ProcessedContent = ProcessTemplate(TemplateContent, Blueprint, BlueprintPath, FileName);
+			FString ProcessedContent = ProcessTemplate(TemplateContent, Blueprint, BlueprintPath, FileName, RightS);
 
 			// 保存文件
 			FString TsFilePath = FPaths::Combine(FPaths::ProjectDir(), TEXT("TypeScript"), TEXT("Mixin"), RightS + FString(".ts"));
@@ -171,7 +172,7 @@ void FPuertsToolModule::HandleButtonClick(bool bForceOverwrite)
 		
 }
 
-FString FPuertsToolModule::ProcessTemplate(const FString& TemplateContent, UBlueprint* Blueprint, FString BlueprintPath, FString FileName)
+FString FPuertsToolModule::ProcessTemplate(const FString& TemplateContent, UBlueprint* Blueprint, FString BlueprintPath, FString FileName,FString TSFileName)
 {
 	FString Result = TemplateContent;
 
@@ -195,7 +196,7 @@ FString FPuertsToolModule::ProcessTemplate(const FString& TemplateContent, UBlue
 	Result = Result.Replace(TEXT("%MIXIN_BLUEPRINT_TYPE%"), *BlueprintClass);
 
 	// 替换模板中的类名
-	Result = Result.Replace(TEXT("%TS_CLASS_NAME%"), *FString::Printf(TEXT("TS_%s"), *FileName));
+	Result = Result.Replace(TEXT("%TS_CLASS_NAME%"), *TSFileName);
 	Result = Result.Replace(TEXT("%BP_TO_JS%"), *FString::Printf(TEXT("BP_%s"), *FileName));
 
 	return Result;
