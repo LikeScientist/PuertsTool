@@ -14,6 +14,7 @@
 #include <Kismet/GameplayStatics.h>
 #include <GameMapsSettings.h>
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "Kismet/GameplayStatics.h"
 
 #define LOCTEXT_NAMESPACE "FPuertsToolModule"
 
@@ -72,8 +73,8 @@ void FPuertsToolModule::StartupModule()
 							})
 					),
 					NAME_None,
-					LOCTEXT("GenerateTemplate", "生成TS模板"),
-					LOCTEXT("GenerateTemplateTooltip", "单击生成(检查存在),双击强制覆盖"),
+					LOCTEXT("GenerateTemplate", "模版生成蓝图Mixin.ts"),
+					LOCTEXT("GenerateTemplateTooltip", "单击生成(文件存在不覆盖),双击强制覆盖+生成ts定义"),
 					FSlateIcon()
 				);
 			})
@@ -124,6 +125,7 @@ void FPuertsToolModule::HandleButtonClick(bool bForceOverwrite)
 			FString BlueprintPath = Blueprint->GetPathName();
 			FString LeftS, RightS;
 			BlueprintPath.Split(".", &LeftS, &RightS);
+			FString BPFileName = RightS;//得到蓝图文件名
 
 			FString SubStr = "/Game/Blueprints/";
 			if (LeftS.Contains(SubStr))
@@ -132,17 +134,40 @@ void FPuertsToolModule::HandleButtonClick(bool bForceOverwrite)
 			}
 			else
 			{
-				LeftS.Split("/Game/", &LeftS, &RightS);
+				SubStr = "/Game/";
+				if (LeftS.Contains(SubStr))
+				{
+					LeftS.Split(SubStr, &LeftS, &RightS);
+				}
+				else//主要针对插件目录下的文件，基本不动路径
+				{
+					RightS = LeftS;
+				}
 			}
-			TArray<FString> stringArray;
-			RightS.ParseIntoArray(stringArray, TEXT("/"), false);
-			FString FileName = stringArray[stringArray.Num() - 1];
 
-			FileName = RightS.Replace(TEXT("BP_"), TEXT(""));
-			RightS = FileName.Replace(*FileName, *(TEXT("TS_") + FileName));
+			////FString BPFileName换到上面获取了
+			//TArray<FString> stringArray;
+			//RightS.ParseIntoArray(stringArray, TEXT("/"), false);
+			//FString BPFileName = stringArray[stringArray.Num() - 1];
+
+			////去掉BP_的蓝图前缀
+			//BPFileName = BPFileName.Replace(TEXT("BP_"), TEXT(""));
+			//TCHAR From = TEXT("BP_") + (*BPFileName);
+			//RightS = RightS.Replace(&From, *BPFileName);
+
+			FString TSFileName = TEXT("Mixin_") + BPFileName;
+			//ts文件增加TS_前缀
+			RightS = RightS.Replace(*BPFileName, *TSFileName);
+			
 
 			// 处理模板
-			FString ProcessedContent = ProcessTemplate(TemplateContent, Blueprint, BlueprintPath, FileName, RightS);
+			FString ProcessedContent = ProcessTemplate(TemplateContent, Blueprint, BlueprintPath, BPFileName, TSFileName);
+
+			
+			if (bForceOverwrite)
+			{
+				GEngine->Exec(GWorld, TEXT("Puerts.Gen"));//调用Puerts导出蓝图定义
+			}
 
 			// 保存文件
 			FString TsFilePath = FPaths::Combine(FPaths::ProjectDir(), TEXT("TypeScript"), TEXT("Mixin"), RightS + FString(".ts"));
@@ -167,7 +192,7 @@ void FPuertsToolModule::HandleButtonClick(bool bForceOverwrite)
 					FText::FromString(TsFilePath)));
 				Info.ExpireDuration = 5.0f;
 				FSlateNotificationManager::Get().AddNotification(Info);
-			}
+			}			
 		}
 	}
 	else
@@ -175,7 +200,7 @@ void FPuertsToolModule::HandleButtonClick(bool bForceOverwrite)
 		
 }
 
-FString FPuertsToolModule::ProcessTemplate(const FString& TemplateContent, UBlueprint* Blueprint, FString BlueprintPath, FString FileName,FString TSFileName)
+FString FPuertsToolModule::ProcessTemplate(const FString& TemplateContent, UBlueprint* Blueprint, FString BlueprintPath, FString BPFileName,FString TSFileName)
 {
 	FString Result = TemplateContent;
 
@@ -200,7 +225,7 @@ FString FPuertsToolModule::ProcessTemplate(const FString& TemplateContent, UBlue
 
 	// 替换模板中的类名
 	Result = Result.Replace(TEXT("%TS_CLASS_NAME%"), *TSFileName);
-	Result = Result.Replace(TEXT("%BP_TO_JS%"), *FString::Printf(TEXT("BP_%s"), *FileName));
+	Result = Result.Replace(TEXT("%BP_TO_JS%"), *FString::Printf(TEXT("BP_%s"), *BPFileName));
 
 	return Result;
 }
