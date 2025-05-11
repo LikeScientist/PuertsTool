@@ -14,14 +14,14 @@
 #include <Kismet/GameplayStatics.h>
 #include <GameMapsSettings.h>
 #include "Kismet2/BlueprintEditorUtils.h"
-#include "Kismet/GameplayStatics.h"
+//#include "Kismet/GameplayStatics.h"
 
 #define LOCTEXT_NAMESPACE "FPuertsToolModule"
 
 void FPuertsToolModule::StartupModule()
 {
 	FBlueprintEditorModule& BlueprintEditorModule = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet");
-	TSharedPtr<FExtender> MenuExtender = MakeShareable(new FExtender());
+	TSharedPtr<FExtender> MenuExtender = MakeShareable(new FExtender());	
 
 	// 用于检测双击的静态变量
 	static FDateTime LastClickTime;
@@ -81,41 +81,88 @@ void FPuertsToolModule::StartupModule()
 	);
 
 	BlueprintEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
+
+	//auto& BlueprintEditorModule = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet");
+	auto& ExtenderDelegates = BlueprintEditorModule.GetMenuExtensibilityManager()->GetExtenderDelegates();
+	ExtenderDelegates.Add(FAssetEditorExtender::CreateLambda(
+		[this,MenuExtender](const TSharedRef<FUICommandList>, const TArray<UObject*> ContextSensitiveObjects)
+		{
+			this->Blueprint = ContextSensitiveObjects.Num() < 1 ? nullptr : Cast<UBlueprint>(ContextSensitiveObjects[0]);
+			if (this->Blueprint)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Open BlueprintPath=%s"), *this->Blueprint->GetPathName());
+
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("Open the blueprint to obtain the object exception"));
+			}
+
+			return MenuExtender.ToSharedRef();
+		}));
 }
 
 void FPuertsToolModule::HandleButtonClick(bool bForceOverwrite)
 {
-	UE_LOG(LogTemp, Warning, TEXT("HandleButtonClick==%s"), bForceOverwrite ? TEXT("true") : TEXT("false"));
-
-	// 获取当前编辑的蓝图
-	UBlueprint* Blueprint = nullptr;
+	UE_LOG(LogTemp, Warning, TEXT("HandleButtonClick==%s"), bForceOverwrite ? TEXT("true") : TEXT("false"));	
 
 	// 获取蓝图编辑器模块
-	if (FBlueprintEditorModule* BlueprintEditorModule = FModuleManager::GetModulePtr<FBlueprintEditorModule>("Kismet"))
-	{
-		// 获取所有打开的蓝图编辑器（返回的是TSharedRef）
-		const TArray<TSharedRef<IBlueprintEditor>>& BlueprintEditors = BlueprintEditorModule->GetBlueprintEditors();
+	//UBlueprint* Blueprint = nullptr;
+	//if (FBlueprintEditorModule* BlueprintEditorModule = FModuleManager::GetModulePtr<FBlueprintEditorModule>("Kismet"))
+	//{
+	//	// 获取所有打开的蓝图编辑器
+	//	const TArray<TSharedRef<IBlueprintEditor>>& BlueprintEditors = BlueprintEditorModule->GetBlueprintEditors();
 
-		TSharedPtr<IBlueprintEditor> FocusedEditor;
-		double maxLastActivationTime = 0.0;
-		// 获取最近最新活动的蓝图编辑器
-		for (const TSharedRef<IBlueprintEditor>& Editor : BlueprintEditors)
-		{
-			if (Editor->GetLastActivationTime() > maxLastActivationTime)
-			{
-				maxLastActivationTime = Editor->GetLastActivationTime();
-				FocusedEditor = Editor;
-				UE_LOG(LogTemp, Log, TEXT("BlueprintPath==%s"), *(static_cast<FBlueprintEditor*>(FocusedEditor.Get())->GetBlueprintObj()->GetPathName()));
-			}
-		}
-		
-		// 获取编辑器中的蓝图对象
-		if (FBlueprintEditor* BlueprintEditor = static_cast<FBlueprintEditor*>(FocusedEditor.Get()))
-		{
-			Blueprint = BlueprintEditor->GetBlueprintObj();
-		}
-	}
+	//	// 获取当前活动的编辑器
+	//	TSharedPtr<SDockTab> ActiveTab = FGlobalTabmanager::Get()->GetActiveTab();
+	//	TSharedPtr<IBlueprintEditor> FocusedEditor;
 
+	//	// 查找与当前活动tab匹配的蓝图编辑器
+	//	if (ActiveTab.IsValid())
+	//	{
+	//		for (const TSharedRef<IBlueprintEditor>& Editor : BlueprintEditors)
+	//		{
+	//			if (Editor->GetTabManager().IsValid())
+	//			{
+	//				TSharedPtr<SDockTab> ActiveTab2 = Editor->GetTabManager()->GetOwnerTab();
+	//				FString log = FString::Printf(TEXT("GetTabLabel(%s==%s), GetTabLabelSuffix(%s==%s)"), *ActiveTab->GetTabLabel().ToString(), *ActiveTab2->GetTabLabel().ToString(), *ActiveTab->GetTabLabelSuffix().ToString(), *ActiveTab2->GetTabLabelSuffix().ToString());
+	//				UE_LOG(LogTemp, Warning, TEXT("%s"), *log);
+
+
+	//				if (ActiveTab2 == ActiveTab)
+	//				{
+	//					FocusedEditor = Editor;
+	//					break;
+	//				}
+	//			}				
+	//		}
+	//	}
+
+	//	// 如果没找到，回退到上次激活的编辑器（原逻辑）
+	//	if (!FocusedEditor.IsValid())
+	//	{
+	//		double maxLastActivationTime = 0.0;
+	//		for (const TSharedRef<IBlueprintEditor>& Editor : BlueprintEditors)
+	//		{
+	//			UE_LOG(LogTemp, Log, TEXT("BlueprintPath==%s"), *(static_cast<FBlueprintEditor*>(&Editor.Get())->GetBlueprintObj()->GetPathName()));
+	//			if (Editor->GetLastActivationTime() > maxLastActivationTime)
+	//			{
+	//				maxLastActivationTime = Editor->GetLastActivationTime();
+	//				FocusedEditor = Editor;					
+	//			}
+	//		}
+	//	}
+
+	//	// 获取编辑器中的蓝图对象
+	//	if (FocusedEditor.IsValid())
+	//	{
+	//		if (FBlueprintEditor* BlueprintEditor = static_cast<FBlueprintEditor*>(FocusedEditor.Get()))
+	//		{
+	//			Blueprint = BlueprintEditor->GetBlueprintObj();
+	//			UE_LOG(LogTemp, Warning, TEXT("Current Blueprint: %s"), *Blueprint->GetName());
+	//		}
+	//	}
+	//}
 	if (Blueprint)
 	{
 		// 读取模板
@@ -123,7 +170,7 @@ void FPuertsToolModule::HandleButtonClick(bool bForceOverwrite)
 		FString TemplateContent;
 		if (FFileHelper::LoadFileToString(TemplateContent, *TemplatePath))
 		{
-			FString BlueprintPath = Blueprint->GetPathName();			
+			FString BlueprintPath = Blueprint->GetPathName();
 			FString LeftS, RightS;
 			BlueprintPath.Split(".", &LeftS, &RightS);
 			FString BPFileName = RightS;//得到蓝图文件名
@@ -159,12 +206,12 @@ void FPuertsToolModule::HandleButtonClick(bool bForceOverwrite)
 			FString TSFileName = TEXT("Mixin_") + BPFileName;
 			//ts文件增加TS_前缀
 			RightS = RightS.Replace(*BPFileName, *TSFileName);
-			
+
 
 			// 处理模板
-			FString ProcessedContent = ProcessTemplate(TemplateContent, Blueprint, BlueprintPath, BPFileName, TSFileName);
+			FString ProcessedContent = ProcessTemplate(TemplateContent, BlueprintPath, BPFileName, TSFileName);
 
-			
+
 			if (bForceOverwrite)
 			{
 				GEngine->Exec(GWorld, TEXT("Puerts.Gen"));//调用Puerts导出蓝图定义
@@ -193,15 +240,15 @@ void FPuertsToolModule::HandleButtonClick(bool bForceOverwrite)
 					FText::FromString(TsFilePath)));
 				Info.ExpireDuration = 5.0f;
 				FSlateNotificationManager::Get().AddNotification(Info);
-			}			
+			}
 		}
 	}
 	else
 		UE_LOG(LogTemp, Warning, TEXT("No active blueprint editor found"));
-		
+
 }
 
-FString FPuertsToolModule::ProcessTemplate(const FString& TemplateContent, UBlueprint* Blueprint, FString BlueprintPath, FString BPFileName,FString TSFileName)
+FString FPuertsToolModule::ProcessTemplate(const FString& TemplateContent, FString BlueprintPath, FString BPFileName, FString TSFileName)
 {
 	FString Result = TemplateContent;
 

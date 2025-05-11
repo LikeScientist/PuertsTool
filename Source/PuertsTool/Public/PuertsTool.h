@@ -12,9 +12,10 @@ public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;	
 	virtual void ShutdownModule() override;
+	UBlueprint* Blueprint = nullptr;
 
 private:
 	TSharedPtr<class IAssetTypeActions> TsMixinAssetActions;
 	void HandleButtonClick(bool bForceOverwrite);
-	FString ProcessTemplate(const FString& TemplateContent, UBlueprint* Blueprint, FString BlueprintPath, FString BPFileName,FString TSFileName);
+	FString ProcessTemplate(const FString& TemplateContent, FString BlueprintPath, FString BPFileName,FString TSFileName);
 };
