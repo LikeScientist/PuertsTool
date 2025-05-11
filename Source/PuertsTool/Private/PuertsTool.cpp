@@ -80,7 +80,7 @@ void FPuertsToolModule::StartupModule()
 			})
 	);
 
-	BlueprintEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
+	//BlueprintEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
 
 	//auto& BlueprintEditorModule = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet");
 	auto& ExtenderDelegates = BlueprintEditorModule.GetMenuExtensibilityManager()->GetExtenderDelegates();
