@@ -104,7 +104,8 @@ void FPuertsToolModule::HandleButtonClick(bool bForceOverwrite)
 			if (Editor->GetLastActivationTime() > maxLastActivationTime)
 			{
 				maxLastActivationTime = Editor->GetLastActivationTime();
-				FocusedEditor = Editor;				
+				FocusedEditor = Editor;
+				UE_LOG(LogTemp, Log, TEXT("BlueprintPath==%s"), *(static_cast<FBlueprintEditor*>(FocusedEditor.Get())->GetBlueprintObj()->GetPathName()));
 			}
 		}
 		
@@ -122,7 +123,7 @@ void FPuertsToolModule::HandleButtonClick(bool bForceOverwrite)
 		FString TemplateContent;
 		if (FFileHelper::LoadFileToString(TemplateContent, *TemplatePath))
 		{
-			FString BlueprintPath = Blueprint->GetPathName();
+			FString BlueprintPath = Blueprint->GetPathName();			
 			FString LeftS, RightS;
 			BlueprintPath.Split(".", &LeftS, &RightS);
 			FString BPFileName = RightS;//得到蓝图文件名
