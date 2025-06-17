@@ -21,12 +21,7 @@
 void FPuertsToolModule::StartupModule()
 {
 	FBlueprintEditorModule& BlueprintEditorModule = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet");
-	TSharedPtr<FExtender> MenuExtender = MakeShareable(new FExtender());	
-
-	// 用于检测双击的静态变量
-	static FDateTime LastClickTime;
-	static bool bWaitingForDoubleClick = false;
-	static FTimerHandle TimerHandle;
+	TSharedPtr<FExtender> MenuExtender = MakeShareable(new FExtender());
 
 	MenuExtender->AddToolBarExtension(
 		"Asset",
@@ -36,62 +31,68 @@ void FPuertsToolModule::StartupModule()
 			{
 				ToolbarBuilder.AddToolBarButton(
 					FUIAction(
-						FExecuteAction::CreateLambda([this]()
-							{
-								const FDateTime CurrentTime = FDateTime::Now();
-								const FTimespan TimeSinceLastClick = CurrentTime - LastClickTime;
-								LastClickTime = CurrentTime;
-
-								// 如果是双击时间范围内
-								if (TimeSinceLastClick.GetTotalSeconds() < 0.3f && bWaitingForDoubleClick)
-								{
-									// 取消等待单击的计时器
-									GEditor->GetTimerManager()->ClearTimer(TimerHandle);
-									bWaitingForDoubleClick = false;
-
-									// 执行双击逻辑
-									HandleButtonClick(true);
-								}
-								else
-								{
-									// 设置等待双击的计时器
-									bWaitingForDoubleClick = true;
-									GEditor->GetTimerManager()->SetTimer(
-										TimerHandle,
-										[this]()
-										{
-											if (bWaitingForDoubleClick)
-											{
-												bWaitingForDoubleClick = false;
-												HandleButtonClick(false); // 执行单击逻辑
-											}
-										},
-										0.3f, // 300毫秒双击检测窗口
-										false
-									);
-								}
-							})
+						InitExecuteAction
 					),
 					NAME_None,
 					LOCTEXT("GenerateTemplate", "模版生成蓝图Mixin.ts"),
 					LOCTEXT("GenerateTemplateTooltip", "单击生成(文件存在不覆盖),双击强制覆盖+生成ts定义"),
 					FSlateIcon()
 				);
-			})
-	);
+			}));
+
 
 	//BlueprintEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
-
 	//auto& BlueprintEditorModule = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet");
 	auto& ExtenderDelegates = BlueprintEditorModule.GetMenuExtensibilityManager()->GetExtenderDelegates();
+
 	ExtenderDelegates.Add(FAssetEditorExtender::CreateLambda(
-		[this,MenuExtender](const TSharedRef<FUICommandList>, const TArray<UObject*> ContextSensitiveObjects)
+		[this, MenuExtender](const TSharedRef<FUICommandList>, const TArray<UObject*> ContextSensitiveObjects)
 		{
 			this->Blueprint = ContextSensitiveObjects.Num() < 1 ? nullptr : Cast<UBlueprint>(ContextSensitiveObjects[0]);
 			if (this->Blueprint)
 			{
 				UE_LOG(LogTemp, Warning, TEXT("Open BlueprintPath=%s"), *this->Blueprint->GetPathName());
+				UBlueprint* localBlueprint = this->Blueprint;
+				// 用于检测双击的静态变量
+				static FDateTime LastClickTime;
+				static bool bWaitingForDoubleClick = false;
+				static FTimerHandle TimerHandle;
 
+				InitExecuteAction = FExecuteAction::CreateLambda([this, localBlueprint]()
+					{
+						const FDateTime CurrentTime = FDateTime::Now();
+						const FTimespan TimeSinceLastClick = CurrentTime - LastClickTime;
+						LastClickTime = CurrentTime;
+
+						// 如果是双击时间范围内
+						if (TimeSinceLastClick.GetTotalSeconds() < 0.3f && bWaitingForDoubleClick)
+						{
+							// 取消等待单击的计时器
+							GEditor->GetTimerManager()->ClearTimer(TimerHandle);
+							bWaitingForDoubleClick = false;
+
+							// 执行双击逻辑
+							HandleButtonClick(localBlueprint, true);
+						}
+						else
+						{
+							// 设置等待双击的计时器
+							bWaitingForDoubleClick = true;
+							GEditor->GetTimerManager()->SetTimer(
+								TimerHandle,
+								[this, localBlueprint]()
+								{
+									if (bWaitingForDoubleClick)
+									{
+										bWaitingForDoubleClick = false;
+										HandleButtonClick(localBlueprint, false); // 执行单击逻辑
+									}
+								},
+								0.3f, // 300毫秒双击检测窗口
+								false
+							);
+						}
+					});
 			}
 			else
 			{
@@ -99,12 +100,13 @@ void FPuertsToolModule::StartupModule()
 			}
 
 			return MenuExtender.ToSharedRef();
-		}));
+		}
+	));
 }
 
-void FPuertsToolModule::HandleButtonClick(bool bForceOverwrite)
+void FPuertsToolModule::HandleButtonClick(UBlueprint* targetBlueprint, bool bForceOverwrite)
 {
-	UE_LOG(LogTemp, Warning, TEXT("HandleButtonClick==%s"), bForceOverwrite ? TEXT("true") : TEXT("false"));	
+	UE_LOG(LogTemp, Warning, TEXT("HandleButtonClick==%s"), bForceOverwrite ? TEXT("true") : TEXT("false"));
 
 	// 获取蓝图编辑器模块
 	//UBlueprint* Blueprint = nullptr;
@@ -163,14 +165,14 @@ void FPuertsToolModule::HandleButtonClick(bool bForceOverwrite)
 	//		}
 	//	}
 	//}
-	if (Blueprint)
+	if (targetBlueprint)
 	{
 		// 读取模板
 		FString TemplatePath = FPaths::Combine(FPaths::ProjectPluginsDir(), TEXT("PuertsTool"), TEXT("Resources"), TEXT("TsMixinTemplate.ts"));
 		FString TemplateContent;
 		if (FFileHelper::LoadFileToString(TemplateContent, *TemplatePath))
 		{
-			FString BlueprintPath = Blueprint->GetPathName();
+			FString BlueprintPath = targetBlueprint->GetPathName();
 			FString LeftS, RightS;
 			BlueprintPath.Split(".", &LeftS, &RightS);
 			FString BPFileName = RightS;//得到蓝图文件名
@@ -219,28 +221,28 @@ void FPuertsToolModule::HandleButtonClick(bool bForceOverwrite)
 
 			// 保存文件
 			FString TsFilePath = FPaths::Combine(FPaths::ProjectDir(), TEXT("TypeScript"), TEXT("Mixin"), RightS + FString(".ts"));
-
+			FText Text;
 			// 检查文件是否存在且不是强制覆盖
 			if (!bForceOverwrite && FPaths::FileExists(TsFilePath))
 			{
 				// 显示文件已存在通知
-				FNotificationInfo Info(FText::Format(LOCTEXT("TsFileExists", "TS file already exists at: {0}\nDouble-click to overwrite."), FText::FromString(TsFilePath)));
-				Info.ExpireDuration = 5.0f;
-				FSlateNotificationManager::Get().AddNotification(Info);
-				return;
+				Text = FText::Format(LOCTEXT("TsFileExists", "TS file already exists at: {0}\nDouble-click to overwrite."), FText::FromString(TsFilePath));
 			}
 
 			if (FFileHelper::SaveStringToFile(ProcessedContent, *TsFilePath))
 			{
 				// 显示成功通知
-				FNotificationInfo Info(FText::Format(
+				Text = FText::Format(
 					bForceOverwrite ?
 					LOCTEXT("TsFileOverwritten", "TS file overwritten at: {0}") :
 					LOCTEXT("TsFileGenerated", "TS file generated at: {0}"),
-					FText::FromString(TsFilePath)));
-				Info.ExpireDuration = 5.0f;
-				FSlateNotificationManager::Get().AddNotification(Info);
+					FText::FromString(TsFilePath));
 			}
+
+			FNotificationInfo Info(Text);
+			Info.ExpireDuration = 5.0f;
+			FSlateNotificationManager::Get().AddNotification(Info);
+			UE_LOG(LogTemp, Log, TEXT("%s"), *(Text.ToString()));
 		}
 	}
 	else

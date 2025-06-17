@@ -16,6 +16,9 @@ public:
 
 private:
 	TSharedPtr<class IAssetTypeActions> TsMixinAssetActions;
-	void HandleButtonClick(bool bForceOverwrite);
+	void HandleButtonClick(UBlueprint* targetBlueprint, bool bForceOverwrite);
 	FString ProcessTemplate(const FString& TemplateContent, FString BlueprintPath, FString BPFileName,FString TSFileName);
+
+	FToolBarExtensionDelegate ToolBarExtensionDelegate;
+	FExecuteAction InitExecuteAction;
 };

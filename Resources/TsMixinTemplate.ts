@@ -1,6 +1,7 @@
 import * as UE from "ue"
 import {argv} from "puerts"
-import { $Ref,$ref,$set,$unref, blueprint } from "puerts";
+import { $Ref, $ref, $set, $unref, $Nullable, blueprint } from "puerts";
+console.log("Puerts-->Mixin-->%TS_CLASS_NAME%")
 
 let gameInstance = argv.getByName("GameInstance") as %GAME_INSTANCE_TYPE%;
 let BP_MixinClass = UE.Class.Load('%BLUEPRINT_PATH%');
