@@ -14,157 +14,157 @@
 #include <Kismet/GameplayStatics.h>
 #include <GameMapsSettings.h>
 #include "Kismet2/BlueprintEditorUtils.h"
+#include "../Toolbars/UnLuaEditorCommands.h"
+#include "../Toolbars/UnLuaEditorToolbar.h"
 //#include "Kismet/GameplayStatics.h"
 
 #define LOCTEXT_NAMESPACE "FPuertsToolModule"
 
+void FPuertsToolModule::OnPostEngineInit()
+{
+	BlueprintToolbar.Get()->Initialize();
+}
+
 void FPuertsToolModule::StartupModule()
 {
-	FBlueprintEditorModule& BlueprintEditorModule = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet");
-	TSharedPtr<FExtender> MenuExtender = MakeShareable(new FExtender());
+	FUnLuaEditorCommands::Register();
 
-	MenuExtender->AddToolBarExtension(
-		"Asset",
-		EExtensionHook::After,
-		nullptr,
-		FToolBarExtensionDelegate::CreateLambda([this](FToolBarBuilder& ToolbarBuilder)
-			{
-				ToolbarBuilder.AddToolBarButton(
-					FUIAction(
-						InitExecuteAction
-					),
-					NAME_None,
-					LOCTEXT("GenerateTemplate", "模版生成蓝图Mixin.ts"),
-					LOCTEXT("GenerateTemplateTooltip", "单击生成(文件存在不覆盖),双击强制覆盖+生成ts定义"),
-					FSlateIcon()
-				);
-			}));
+	FCoreDelegates::OnPostEngineInit.AddRaw(this, &FPuertsToolModule::OnPostEngineInit);
+
+	BlueprintToolbar = MakeShareable(new FBlueprintToolbar);
+	
+	
+	//FBlueprintEditorModule& BlueprintEditorModule = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet");
+	//TSharedPtr<FExtender> MenuExtender = MakeShareable(new FExtender());
+
+	//MenuExtender->AddToolBarExtension(
+	//	"Asset",
+	//	EExtensionHook::After,
+	//	nullptr,
+	//	FToolBarExtensionDelegate::CreateLambda([this](FToolBarBuilder& ToolbarBuilder)
+	//		{
+	//			ToolbarBuilder.AddToolBarButton(
+	//				FUIAction(
+	//					InitExecuteAction
+	//				),
+	//				NAME_None,
+	//				LOCTEXT("GenerateTemplate", "模版生成蓝图Mixin.ts"),
+	//				LOCTEXT("GenerateTemplateTooltip", "单击生成(文件存在不覆盖),双击强制覆盖+生成ts定义"),
+	//				FSlateIcon()
+	//			);
+	//		}));
 
 
-	//BlueprintEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
-	//auto& BlueprintEditorModule = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet");
-	auto& ExtenderDelegates = BlueprintEditorModule.GetMenuExtensibilityManager()->GetExtenderDelegates();
+	////BlueprintEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
+	////auto& BlueprintEditorModule = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet");
+	//auto& ExtenderDelegates = BlueprintEditorModule.GetMenuExtensibilityManager()->GetExtenderDelegates();
 
-	ExtenderDelegates.Add(FAssetEditorExtender::CreateLambda(
-		[this, MenuExtender](const TSharedRef<FUICommandList>, const TArray<UObject*> ContextSensitiveObjects)
+	//ExtenderDelegates.Add(FAssetEditorExtender::CreateLambda(
+	//	[this, MenuExtender](const TSharedRef<FUICommandList>, const TArray<UObject*> ContextSensitiveObjects)
+	//	{
+	//		this->Blueprint = ContextSensitiveObjects.Num() < 1 ? nullptr : Cast<UBlueprint>(ContextSensitiveObjects[0]);
+	//		GetExtender(this->Blueprint);
+	//		if (this->Blueprint)
+	//		{
+	//			UE_LOG(LogTemp, Warning, TEXT("Open BlueprintPath=%s"), *this->Blueprint->GetPathName());
+	//			UBlueprint* localBlueprint = this->Blueprint;
+	//			// 用于检测双击的静态变量
+	//			static FDateTime LastClickTime;
+	//			static bool bWaitingForDoubleClick = false;
+	//			static FTimerHandle TimerHandle;
+
+	//			InitExecuteAction = FExecuteAction::CreateLambda([this, localBlueprint]()
+	//				{
+	//					const FDateTime CurrentTime = FDateTime::Now();
+	//					const FTimespan TimeSinceLastClick = CurrentTime - LastClickTime;
+	//					LastClickTime = CurrentTime;
+
+	//					// 如果是双击时间范围内
+	//					if (TimeSinceLastClick.GetTotalSeconds() < 0.3f && bWaitingForDoubleClick)
+	//					{
+	//						// 取消等待单击的计时器
+	//						GEditor->GetTimerManager()->ClearTimer(TimerHandle);
+	//						bWaitingForDoubleClick = false;
+
+	//						// 执行双击逻辑
+	//						HandleButtonClick(localBlueprint, true);
+	//					}
+	//					else
+	//					{
+	//						// 设置等待双击的计时器
+	//						bWaitingForDoubleClick = true;
+	//						GEditor->GetTimerManager()->SetTimer(
+	//							TimerHandle,
+	//							[this, localBlueprint]()
+	//							{
+	//								if (bWaitingForDoubleClick)
+	//								{
+	//									bWaitingForDoubleClick = false;
+	//									HandleButtonClick(localBlueprint, false); // 执行单击逻辑
+	//								}
+	//							},
+	//							0.3f, // 300毫秒双击检测窗口
+	//							false
+	//						);
+	//					}
+	//				});
+	//		}
+	//		else
+	//		{
+	//			UE_LOG(LogTemp, Error, TEXT("Open the blueprint to obtain the object exception"));
+	//		}
+
+	//		return MenuExtender.ToSharedRef();
+	//	}
+	//));
+}
+
+TSharedRef<FExtender> FPuertsToolModule::GetExtender(UObject* InContextObject)
+{
+	TSharedRef<FExtender> ToolbarExtender(new FExtender());
+	const auto ExtensionDelegate = FToolBarExtensionDelegate::CreateLambda([this, InContextObject](FToolBarBuilder& ToolbarBuilder)
 		{
-			this->Blueprint = ContextSensitiveObjects.Num() < 1 ? nullptr : Cast<UBlueprint>(ContextSensitiveObjects[0]);
-			if (this->Blueprint)
+			BuildToolbar(ToolbarBuilder, InContextObject);
+		});
+	ToolbarExtender->AddToolBarExtension("Debugging", EExtensionHook::After, nullptr, ExtensionDelegate);
+	return ToolbarExtender;
+}
+
+void FPuertsToolModule::BuildToolbar(FToolBarBuilder& ToolbarBuilder, UObject* InContextObject)
+{
+	if (!InContextObject)
+		return;
+
+	ToolbarBuilder.BeginSection(NAME_None);
+
+	const UBlueprint* Blueprint2 = Cast<UBlueprint>(InContextObject);
+	UE_LOG(LogTemp,Warning,TEXT("Blueprint2(%s)"),*Blueprint2->GetPathName());
+	ToolbarBuilder.AddComboButton(
+		FUIAction(),
+		FOnGetContent::CreateLambda([&, Blueprint2, InContextObject]()
 			{
-				UE_LOG(LogTemp, Warning, TEXT("Open BlueprintPath=%s"), *this->Blueprint->GetPathName());
-				UBlueprint* localBlueprint = this->Blueprint;
-				// 用于检测双击的静态变量
-				static FDateTime LastClickTime;
-				static bool bWaitingForDoubleClick = false;
-				static FTimerHandle TimerHandle;
+				UE_LOG(LogTemp, Warning, TEXT("FOnGetContent::CreateLambda Blueprint2(%s)"), *Blueprint2->GetPathName());
+				const TSharedRef<FUICommandList> CommandList;
+				FMenuBuilder MenuBuilder(true, CommandList);
+				MenuBuilder.AddMenuEntry(CopyAsRelativePath, NAME_None, LOCTEXT("CopyAsRelativePath", "Copy as Relative Path"));
+				MenuBuilder.AddMenuEntry(RevealInExplorer, NAME_None, LOCTEXT("RevealInExplorer", "Reveal in Explorer"));
+				MenuBuilder.AddMenuEntry(CreateLuaTemplate, NAME_None, LOCTEXT("CreateLuaTemplate", "Create Lua Template"));
+				MenuBuilder.AddMenuEntry(UnbindFromLua, NAME_None, LOCTEXT("Unbind", "Unbind"));
+				return MenuBuilder.MakeWidget();
+			}),
+		LOCTEXT("UnLua_Label", "UnLua"),
+		LOCTEXT("UnLua_ToolTip", "UnLua")
+	);
 
-				InitExecuteAction = FExecuteAction::CreateLambda([this, localBlueprint]()
-					{
-						const FDateTime CurrentTime = FDateTime::Now();
-						const FTimespan TimeSinceLastClick = CurrentTime - LastClickTime;
-						LastClickTime = CurrentTime;
+	ToolbarBuilder.EndSection();
 
-						// 如果是双击时间范围内
-						if (TimeSinceLastClick.GetTotalSeconds() < 0.3f && bWaitingForDoubleClick)
-						{
-							// 取消等待单击的计时器
-							GEditor->GetTimerManager()->ClearTimer(TimerHandle);
-							bWaitingForDoubleClick = false;
-
-							// 执行双击逻辑
-							HandleButtonClick(localBlueprint, true);
-						}
-						else
-						{
-							// 设置等待双击的计时器
-							bWaitingForDoubleClick = true;
-							GEditor->GetTimerManager()->SetTimer(
-								TimerHandle,
-								[this, localBlueprint]()
-								{
-									if (bWaitingForDoubleClick)
-									{
-										bWaitingForDoubleClick = false;
-										HandleButtonClick(localBlueprint, false); // 执行单击逻辑
-									}
-								},
-								0.3f, // 300毫秒双击检测窗口
-								false
-							);
-						}
-					});
-			}
-			else
-			{
-				UE_LOG(LogTemp, Error, TEXT("Open the blueprint to obtain the object exception"));
-			}
-
-			return MenuExtender.ToSharedRef();
-		}
-	));
+	//BuildNodeMenu();
 }
 
 void FPuertsToolModule::HandleButtonClick(UBlueprint* targetBlueprint, bool bForceOverwrite)
 {
 	UE_LOG(LogTemp, Warning, TEXT("HandleButtonClick==%s"), bForceOverwrite ? TEXT("true") : TEXT("false"));
 
-	// 获取蓝图编辑器模块
-	//UBlueprint* Blueprint = nullptr;
-	//if (FBlueprintEditorModule* BlueprintEditorModule = FModuleManager::GetModulePtr<FBlueprintEditorModule>("Kismet"))
-	//{
-	//	// 获取所有打开的蓝图编辑器
-	//	const TArray<TSharedRef<IBlueprintEditor>>& BlueprintEditors = BlueprintEditorModule->GetBlueprintEditors();
-
-	//	// 获取当前活动的编辑器
-	//	TSharedPtr<SDockTab> ActiveTab = FGlobalTabmanager::Get()->GetActiveTab();
-	//	TSharedPtr<IBlueprintEditor> FocusedEditor;
-
-	//	// 查找与当前活动tab匹配的蓝图编辑器
-	//	if (ActiveTab.IsValid())
-	//	{
-	//		for (const TSharedRef<IBlueprintEditor>& Editor : BlueprintEditors)
-	//		{
-	//			if (Editor->GetTabManager().IsValid())
-	//			{
-	//				TSharedPtr<SDockTab> ActiveTab2 = Editor->GetTabManager()->GetOwnerTab();
-	//				FString log = FString::Printf(TEXT("GetTabLabel(%s==%s), GetTabLabelSuffix(%s==%s)"), *ActiveTab->GetTabLabel().ToString(), *ActiveTab2->GetTabLabel().ToString(), *ActiveTab->GetTabLabelSuffix().ToString(), *ActiveTab2->GetTabLabelSuffix().ToString());
-	//				UE_LOG(LogTemp, Warning, TEXT("%s"), *log);
-
-
-	//				if (ActiveTab2 == ActiveTab)
-	//				{
-	//					FocusedEditor = Editor;
-	//					break;
-	//				}
-	//			}				
-	//		}
-	//	}
-
-	//	// 如果没找到，回退到上次激活的编辑器（原逻辑）
-	//	if (!FocusedEditor.IsValid())
-	//	{
-	//		double maxLastActivationTime = 0.0;
-	//		for (const TSharedRef<IBlueprintEditor>& Editor : BlueprintEditors)
-	//		{
-	//			UE_LOG(LogTemp, Log, TEXT("BlueprintPath==%s"), *(static_cast<FBlueprintEditor*>(&Editor.Get())->GetBlueprintObj()->GetPathName()));
-	//			if (Editor->GetLastActivationTime() > maxLastActivationTime)
-	//			{
-	//				maxLastActivationTime = Editor->GetLastActivationTime();
-	//				FocusedEditor = Editor;					
-	//			}
-	//		}
-	//	}
-
-	//	// 获取编辑器中的蓝图对象
-	//	if (FocusedEditor.IsValid())
-	//	{
-	//		if (FBlueprintEditor* BlueprintEditor = static_cast<FBlueprintEditor*>(FocusedEditor.Get()))
-	//		{
-	//			Blueprint = BlueprintEditor->GetBlueprintObj();
-	//			UE_LOG(LogTemp, Warning, TEXT("Current Blueprint: %s"), *Blueprint->GetName());
-	//		}
-	//	}
-	//}
 	if (targetBlueprint)
 	{
 		// 读取模板

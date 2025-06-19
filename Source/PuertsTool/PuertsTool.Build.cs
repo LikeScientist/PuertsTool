@@ -41,6 +41,9 @@ public class PuertsTool : ModuleRules
 				"Slate",
 				"SlateCore",
                 "ContentBrowser",
+                "ToolMenus",
+                "Projects",
+                "InputCore",
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);
