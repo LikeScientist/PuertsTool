@@ -21,10 +21,12 @@ public:
 	virtual void ShutdownModule() override;
 	UBlueprint* Blueprint = nullptr;
 
+public:
+	void HandleButtonClick(UBlueprint* targetBlueprint, bool bForceOverwrite);
+
 private:
 	TSharedPtr<class IAssetTypeActions> TsMixinAssetActions;
-	void HandleButtonClick(UBlueprint* targetBlueprint, bool bForceOverwrite);
-	FString ProcessTemplate(const FString& TemplateContent, FString BlueprintPath, FString BPFileName,FString TSFileName);
+	FString ProcessTemplate(const FString& TemplateContent, FString BlueprintPath, FString BPFileName, FString TSFileName);
 
 	FToolBarExtensionDelegate ToolBarExtensionDelegate;
 	FExecuteAction InitExecuteAction;

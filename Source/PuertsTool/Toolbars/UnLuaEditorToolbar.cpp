@@ -35,6 +35,7 @@ void FUnLuaEditorToolbar::Initialize()
     CommandList = MakeShared<FUICommandList>();
     ContextObject = nullptr;
     BindCommands();
+    this->PuertsToolModule = static_cast<FPuertsToolModule*>(FModuleManager::Get().GetModule("PuertsToolModule"));
 }
 
 void FUnLuaEditorToolbar::BindCommands()
@@ -265,59 +266,7 @@ void FUnLuaEditorToolbar::CreateLuaTemplate_Executed()
     if (!IsValid(Blueprint))
         return;
 
-    UClass* Class = Blueprint->GeneratedClass;
-
-    const auto Func = Class->FindFunctionByName(FName("GetModuleName"));
-    if (!IsValid(Func))
-        return;
-
-    FString ModuleName;
-    Class->GetDefaultObject()->ProcessEvent(Func, &ModuleName);
-
-    if (ModuleName.IsEmpty())
-    {
-        FNotificationInfo Info(LOCTEXT("ModuleNameRequired", "Please specify a module name first"));
-        Info.ExpireDuration = 5;
-        FSlateNotificationManager::Get().AddNotification(Info);
-        return;
-    }
-
-    TArray<FString> ModuleNameParts;
-    ModuleName.ParseIntoArray(ModuleNameParts, TEXT("."));
-    const auto TemplateName = ModuleNameParts.Last();
-
-    const auto RelativePath = ModuleName.Replace(TEXT("."), TEXT("/"));
-	/*FString GLuaSrcRelativePath = TEXT("Script/");
-	FString GLuaSrcFullPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() + GLuaSrcRelativePath);*/
-    const auto FileName = FString::Printf(TEXT("%s%s.lua"), *GLuaSrcFullPath, *RelativePath);
-
-    if (FPaths::FileExists(FileName))
-    {
-        UE_LOG(LogTemp, Warning, TEXT("%s"), *FText::Format(LOCTEXT("FileAlreadyExists", "Lua file ({0}) is already existed!"), FText::FromString(TemplateName)).ToString());
-        return;
-    }
-
-    static FString BaseDir = IPluginManager::Get().FindPlugin(TEXT("UnLua"))->GetBaseDir();
-    for (auto TemplateClass = Class; TemplateClass; TemplateClass = TemplateClass->GetSuperClass())
-    {
-        auto TemplateClassName = TemplateClass->GetName().EndsWith("_C") ? TemplateClass->GetName().LeftChop(2) : TemplateClass->GetName();
-        auto RelativeFilePath = "Config/LuaTemplates" / TemplateClassName + ".lua";
-        auto FullFilePath = FPaths::ProjectConfigDir() / RelativeFilePath;
-        if (!FPaths::FileExists(FullFilePath))
-            FullFilePath = BaseDir / RelativeFilePath;
-
-        if (!FPaths::FileExists(FullFilePath))
-            continue;
-
-        FString Content;
-        FFileHelper::LoadFileToString(Content, *FullFilePath);
-        Content = Content.Replace(TEXT("TemplateName"), *TemplateName)
-                         ///.Replace(TEXT("ClassName"), *UnLua::IntelliSense::GetTypeName(Class))
-                         ;
-
-        FFileHelper::SaveStringToFile(Content, *FileName, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
-        break;
-    }
+    PuertsToolModule->HandleButtonClick(Blueprint, false);    
 }
 
 void FUnLuaEditorToolbar::RevealInExplorer_Executed()
@@ -361,27 +310,7 @@ void FUnLuaEditorToolbar::RevealInExplorer_Executed()
 
 void FUnLuaEditorToolbar::CopyAsRelativePath_Executed() const
 {
-	/*const auto Blueprint = Cast<UBlueprint>(ContextObject);
-	if (!IsValid(Blueprint))
-		return;
-
-	const auto TargetClass = Blueprint->GeneratedClass;
-	if (!IsValid(TargetClass))
-		return;
-
-	if (!TargetClass->ImplementsInterface(UUnLuaInterface::StaticClass()))
-		return;
-
-	const auto Func = TargetClass->FindFunctionByName(FName("GetModuleName"));
-	if (!IsValid(Func))
-		return;
-
-	FString ModuleName;
-	const auto DefaultObject = TargetClass->GetDefaultObject();
-	DefaultObject->UObject::ProcessEvent(Func, &ModuleName);
-
-	const auto RelativePath = ModuleName.Replace(TEXT("."), TEXT("/")) + TEXT(".lua");
-	FPlatformApplicationMisc::ClipboardCopy(*RelativePath);*/
+    GEngine->Exec(GWorld, TEXT("Puerts.Gen"));//调用Puerts导出蓝图定义	
 }
 
 #undef LOCTEXT_NAMESPACE
