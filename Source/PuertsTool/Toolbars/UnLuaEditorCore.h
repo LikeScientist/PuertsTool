@@ -34,5 +34,5 @@ enum ELuaBindingStatus
 /* 获取指定蓝图对象上的Lua绑定状态 */
 ELuaBindingStatus GetBindingStatus(const UBlueprint* Blueprint);
 
-FString GLuaSrcRelativePath = TEXT("Script/");
-FString GLuaSrcFullPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() + GLuaSrcRelativePath);
+// FString GLuaSrcRelativePath = TEXT("Script/");
+// FString GLuaSrcFullPath = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir() + GLuaSrcRelativePath);

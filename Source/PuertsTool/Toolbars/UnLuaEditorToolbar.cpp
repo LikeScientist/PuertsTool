@@ -1,25 +1,19 @@
 ﻿#include "UnLuaEditorToolbar.h"
 #include "Misc/EngineVersionComparison.h"
-//#include "UnLuaPrivate.h"
 #include "UnLuaEditorCore.h"
 #include "UnLuaEditorToolbar.h"
 #include "UnLuaEditorCommands.h"
-//#include "UnLuaInterface.h"
 #include "Animation/AnimInstance.h"
 #include "Blueprint/UserWidget.h"
 #include "HAL/PlatformApplicationMisc.h"
 #include "Interfaces/IPluginManager.h"
 #include "BlueprintEditor.h"
-//#include "LuaModuleLocator.h"
 #include "SBlueprintEditorToolbar.h"
-//#include "Framework/Docking/SDockingTabWell.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "Kismet2/BlueprintEditorUtils.h"
 #include "Layout/Children.h"
 #include "Widgets/Notifications/SNotificationList.h"
 #include "ToolMenus.h"
-//#include "UnLuaSettings.h"
-//#include "UnLuaIntelliSense.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 
 #define LOCTEXT_NAMESPACE "FPuertsToolEditorModule"
@@ -43,8 +37,6 @@ void FPuertsToolEditorToolbar::BindCommands()
     const auto& Commands = FPuertsToolEditorCommands::Get();
     CommandList->MapAction(Commands.CreateLuaTemplate, FExecuteAction::CreateRaw(this, &FPuertsToolEditorToolbar::CreateLuaTemplate_Executed));
     CommandList->MapAction(Commands.CopyAsRelativePath, FExecuteAction::CreateRaw(this, &FPuertsToolEditorToolbar::CopyAsRelativePath_Executed));
-    CommandList->MapAction(Commands.BindToLua, FExecuteAction::CreateRaw(this, &FPuertsToolEditorToolbar::BindToLua_Executed));
-    CommandList->MapAction(Commands.UnbindFromLua, FExecuteAction::CreateRaw(this, &FPuertsToolEditorToolbar::UnbindFromLua_Executed));
     CommandList->MapAction(Commands.RevealInExplorer, FExecuteAction::CreateRaw(this, &FPuertsToolEditorToolbar::RevealInExplorer_Executed));
 }
 
@@ -61,46 +53,18 @@ void FPuertsToolEditorToolbar::BuildToolbar(FToolBarBuilder& ToolbarBuilder, UOb
         FOnGetContent::CreateLambda([&, Blueprint, InContextObject]()
         {
             ContextObject = InContextObject;
-            const auto BindingStatus = GetBindingStatus(Blueprint);
             const FPuertsToolEditorCommands& Commands = FPuertsToolEditorCommands::Get();
             FMenuBuilder MenuBuilder(true, CommandList);
-            if (BindingStatus == NotBound)
-            {
-                MenuBuilder.AddMenuEntry(Commands.BindToLua, NAME_None, LOCTEXT("Bind", "Bind"));
-            }
-            else
-            {
-                MenuBuilder.AddMenuEntry(Commands.CopyAsRelativePath, NAME_None, LOCTEXT("CopyAsRelativePath", "Copy as Relative Path"));
-                MenuBuilder.AddMenuEntry(Commands.RevealInExplorer, NAME_None, LOCTEXT("RevealInExplorer", "Reveal in Explorer"));
-                MenuBuilder.AddMenuEntry(Commands.CreateLuaTemplate, NAME_None, LOCTEXT("CreateLuaTemplate", "Create Lua Template"));
-                MenuBuilder.AddMenuEntry(Commands.UnbindFromLua, NAME_None, LOCTEXT("Unbind", "Unbind"));
-            }
+            MenuBuilder.AddMenuEntry(Commands.CopyAsRelativePath, NAME_None, LOCTEXT("CopyAsRelativePath", "Copy as Relative Path"));
+            MenuBuilder.AddMenuEntry(Commands.RevealInExplorer, NAME_None, LOCTEXT("RevealInExplorer", "Reveal in Explorer"));
+            MenuBuilder.AddMenuEntry(Commands.CreateLuaTemplate, NAME_None, LOCTEXT("CreateLuaTemplate", "Create Lua Template"));
             return MenuBuilder.MakeWidget();
         }),
         LOCTEXT("PuertsTool_Label", "PuertsTool"),
         LOCTEXT("PuertsTool_ToolTip", "PuertsTool"),
         TAttribute<FSlateIcon>::Create([Blueprint]
-        {
-            const auto BindingStatus = GetBindingStatus(Blueprint);
-            FString InStyleName;
-            switch (BindingStatus)
-            {
-            case Unknown:
-                InStyleName = "PuertsToolEditor.Status_Unknown";
-                break;
-            case NotBound:
-                InStyleName = "PuertsToolEditor.Status_NotBound";
-                break;
-            case Bound:
-                InStyleName = "PuertsToolEditor.Status_Bound";
-                break;
-            case BoundButInvalid:
-                InStyleName = "PuertsToolEditor.Status_BoundButInvalid";
-                break;
-            default:
-                check(false);
-            }
-
+        {            
+            FString InStyleName;            
             return FSlateIcon("PuertsToolEditorStyle", *InStyleName);
         })
     );
@@ -139,125 +103,6 @@ TSharedRef<FExtender> FPuertsToolEditorToolbar::GetExtender(UObject* InContextOb
     ToolbarExtender->AddToolBarExtension("Debugging", EExtensionHook::After, CommandList, ExtensionDelegate);
     
     return ToolbarExtender;
-}
-
-void FPuertsToolEditorToolbar::BindToLua_Executed() const
-{
-    /*const auto Blueprint = Cast<UBlueprint>(ContextObject);
-    if (!IsValid(Blueprint))
-        return;
-
-    const auto TargetClass = Blueprint->GeneratedClass;
-    if (!IsValid(TargetClass))
-        return;
-
-    if (TargetClass->ImplementsInterface(UPuertsToolInterface::StaticClass()))
-        return;
-
-#if UE_VERSION_OLDER_THAN(5, 1, 0)
-    const auto Ok = FBlueprintEditorUtils::ImplementNewInterface(Blueprint, FName("PuertsToolInterface"));
-#else
-    const auto Ok = FBlueprintEditorUtils::ImplementNewInterface(Blueprint, FTopLevelAssetPath(UPuertsToolInterface::StaticClass()));
-#endif
-    if (!Ok)
-        return;
-
-    FString LuaModuleName;
-    const auto ModifierKeys = FSlateApplication::Get().GetModifierKeys();
-    const auto bIsAltDown = ModifierKeys.IsLeftAltDown() || ModifierKeys.IsRightAltDown();
-    if (bIsAltDown)
-    {
-        const auto Package = Blueprint->GetTypedOuter(UPackage::StaticClass());
-        LuaModuleName = Package->GetName().RightChop(6).Replace(TEXT("/"), TEXT("."));
-    }
-    else
-    {
-        const auto Settings = GetDefault<UPuertsToolSettings>();
-        if (Settings && Settings->ModuleLocatorClass)
-        {
-            const auto ModuleLocator = Cast<ULuaModuleLocator>(Settings->ModuleLocatorClass->GetDefaultObject());
-            LuaModuleName = ModuleLocator->Locate(TargetClass);
-        }
-    }
-
-    if (!LuaModuleName.IsEmpty())
-    {
-        const auto InterfaceDesc = *Blueprint->ImplementedInterfaces.FindByPredicate([](const FBPInterfaceDescription& Desc)
-        {
-            return Desc.Interface == UPuertsToolInterface::StaticClass();
-        });
-        InterfaceDesc.Graphs[0]->Nodes[1]->Pins[1]->DefaultValue = LuaModuleName;
-    }
-
-#if !UE_VERSION_OLDER_THAN(4, 26, 0)
-
-    const auto BlueprintEditors = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet").GetBlueprintEditors();
-    for (auto BlueprintEditor : BlueprintEditors)
-    {
-        const auto MyBlueprintEditor = static_cast<FBlueprintEditor*>(&BlueprintEditors[0].Get());
-        if (!MyBlueprintEditor || MyBlueprintEditor->GetBlueprintObj() != Blueprint)
-            continue;
-        MyBlueprintEditor->Compile();
-
-        const auto Func = Blueprint->GeneratedClass->FindFunctionByName(FName("GetModuleName"));
-        const auto GraphToOpen = FBlueprintEditorUtils::FindScopeGraph(Blueprint, Func);
-        MyBlueprintEditor->OpenGraphAndBringToFront(GraphToOpen);
-    }
-
-#endif*/
-}
-
-void FPuertsToolEditorToolbar::UnbindFromLua_Executed() const
-{
-//    const auto Blueprint = Cast<UBlueprint>(ContextObject);
-//    if (!IsValid(Blueprint))
-//        return;
-//
-//    const auto TargetClass = Blueprint->GeneratedClass;
-//    if (!IsValid(TargetClass))
-//        return;
-//
-//    if (!TargetClass->ImplementsInterface(UPuertsToolInterface::StaticClass()))
-//        return;
-//
-//#if UE_VERSION_OLDER_THAN(5, 1, 0)
-//    FBlueprintEditorUtils::RemoveInterface(Blueprint, FName("PuertsToolInterface"));
-//#else
-//    FBlueprintEditorUtils::RemoveInterface(Blueprint, FTopLevelAssetPath(UPuertsToolInterface::StaticClass()));
-//#endif
-//
-//#if !UE_VERSION_OLDER_THAN(4, 26, 0)
-//
-//    const auto BlueprintEditors = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet").GetBlueprintEditors();
-//    for (auto BlueprintEditor : BlueprintEditors)
-//    {
-//        const auto MyBlueprintEditor = static_cast<FBlueprintEditor*>(&BlueprintEditors[0].Get());
-//        if (!MyBlueprintEditor || MyBlueprintEditor->GetBlueprintObj() != Blueprint)
-//            continue;
-//        MyBlueprintEditor->Compile();
-//        MyBlueprintEditor->RefreshEditors();
-//    }
-//
-//#endif
-//
-//    const auto ActiveTab = FGlobalTabmanager::Get()->GetActiveTab();
-//    if (!ActiveTab)
-//        return;
-//
-//    const auto DockingTabWell = ActiveTab->GetParent();
-//    if (!DockingTabWell)
-//        return;
-//
-//    const auto DockTabs = DockingTabWell->GetChildren(); // DockingTabWell->GetTabs(); 
-//    for (auto i = 0; i < DockTabs->Num(); i++)
-//    {
-//        const auto DockTab = StaticCastSharedRef<SDockTab>(DockTabs->GetChildAt(i));
-//        const auto Label = DockTab->GetTabLabel();
-//        if (Label.ToString().Equals("$$ Get Module Name $$"))
-//        {
-//            DockTab->RequestCloseTab();
-//        }
-//    }
 }
 
 void FPuertsToolEditorToolbar::CreateLuaTemplate_Executed()

@@ -19,15 +19,7 @@
 void FPuertsToolEditorCommands::RegisterCommands()
 {
     UI_COMMAND(CreateLuaTemplate, "Create Lua Template", "Create lua template file", EUserInterfaceActionType::Button, FInputChord());
-    UI_COMMAND(CopyAsRelativePath, "Copy as Relative Path", "Copy module name as relative path.", EUserInterfaceActionType::Button, FInputChord());
-    UI_COMMAND(BindToLua, "Bind", "Implement PuertsToolInterface", EUserInterfaceActionType::Button, FInputChord());
-    UI_COMMAND(UnbindFromLua, "Unbind", "Remove the implementation of PuertsToolInterface", EUserInterfaceActionType::Button, FInputChord());
-    UI_COMMAND(HotReload, "Hot Reload", "Hot reload all lua states", EUserInterfaceActionType::Button, FInputChord(EModifierKey::Alt, EKeys::L));
-    UI_COMMAND(OpenRuntimeSettings, "Open Runtime Settings", "Open PuertsTool Runtime settings", EUserInterfaceActionType::Button, FInputChord());
-    UI_COMMAND(OpenEditorSettings, "Open Editor Settings", "Open PuertsTool Editor settings", EUserInterfaceActionType::Button, FInputChord());
-    UI_COMMAND(ReportIssue, "Report issue", "Create an issue on github", EUserInterfaceActionType::Button, FInputChord());
-    UI_COMMAND(About, "About", "About this version", EUserInterfaceActionType::Button, FInputChord());
-    UI_COMMAND(GenerateIntelliSense, "Generate IntelliSense", "Generate intelliSense files", EUserInterfaceActionType::Button, FInputChord());
+    UI_COMMAND(CopyAsRelativePath, "Copy as Relative Path", "Copy module name as relative path.", EUserInterfaceActionType::Button, FInputChord());    
     UI_COMMAND(RevealInExplorer, "Reveal in Explorer", "Reveal lua file in explorer", EUserInterfaceActionType::Button, FInputChord());
 }
 

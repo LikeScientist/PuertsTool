@@ -23,100 +23,98 @@
 void FPuertsToolModule::OnPostEngineInit()
 {
 	BlueprintToolbar.Get()->Initialize();
+
+	FBlueprintEditorModule& BlueprintEditorModule = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet");
+	TSharedPtr<FExtender> MenuExtender = MakeShareable(new FExtender());
+
+	MenuExtender->AddToolBarExtension(
+		"Asset",
+		EExtensionHook::After,
+		nullptr,
+		FToolBarExtensionDelegate::CreateLambda([this](FToolBarBuilder& ToolbarBuilder)
+			{
+				ToolbarBuilder.AddToolBarButton(
+					FUIAction(
+						InitExecuteAction
+					),
+					NAME_None,
+					LOCTEXT("GenerateTemplate", "模版生成蓝图Mixin.ts"),
+					LOCTEXT("GenerateTemplateTooltip", "单击生成(文件存在不覆盖),双击强制覆盖+生成ts定义"),
+					FSlateIcon()
+				);
+			}));
+
+
+	//BlueprintEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
+	//auto& BlueprintEditorModule = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet");
+	auto& ExtenderDelegates = BlueprintEditorModule.GetMenuExtensibilityManager()->GetExtenderDelegates();
+
+	ExtenderDelegates.Add(FAssetEditorExtender::CreateLambda(
+		[this, MenuExtender](const TSharedRef<FUICommandList>, const TArray<UObject*> ContextSensitiveObjects)
+		{
+			this->Blueprint = ContextSensitiveObjects.Num() < 1 ? nullptr : Cast<UBlueprint>(ContextSensitiveObjects[0]);
+			//GetExtender(this->Blueprint);
+			if (this->Blueprint)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Open BlueprintPath=%s"), *this->Blueprint->GetPathName());
+				UBlueprint* localBlueprint = this->Blueprint;
+				// 用于检测双击的静态变量
+				static FDateTime LastClickTime;
+				static bool bWaitingForDoubleClick = false;
+				static FTimerHandle TimerHandle;
+
+				InitExecuteAction = FExecuteAction::CreateLambda([this, localBlueprint]()
+					{
+						const FDateTime CurrentTime = FDateTime::Now();
+						const FTimespan TimeSinceLastClick = CurrentTime - LastClickTime;
+						LastClickTime = CurrentTime;
+
+						// 如果是双击时间范围内
+						if (TimeSinceLastClick.GetTotalSeconds() < 0.3f && bWaitingForDoubleClick)
+						{
+							// 取消等待单击的计时器
+							GEditor->GetTimerManager()->ClearTimer(TimerHandle);
+							bWaitingForDoubleClick = false;
+
+							// 执行双击逻辑
+							HandleButtonClick(localBlueprint, true);
+						}
+						else
+						{
+							// 设置等待双击的计时器
+							bWaitingForDoubleClick = true;
+							GEditor->GetTimerManager()->SetTimer(
+								TimerHandle,
+								[this, localBlueprint]()
+								{
+									if (bWaitingForDoubleClick)
+									{
+										bWaitingForDoubleClick = false;
+										HandleButtonClick(localBlueprint, false); // 执行单击逻辑
+									}
+								},
+								0.3f, // 300毫秒双击检测窗口
+								false
+							);
+						}
+					});
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("Open the blueprint to obtain the object exception"));
+			}
+
+			return MenuExtender.ToSharedRef();
+		}
+	));
 }
 
 void FPuertsToolModule::StartupModule()
 {
 	FPuertsToolEditorCommands::Register();
 
-	FCoreDelegates::OnPostEngineInit.AddRaw(this, &FPuertsToolModule::OnPostEngineInit);
-
 	BlueprintToolbar = MakeShareable(new FBlueprintToolbar);
-	
-	
-	//FBlueprintEditorModule& BlueprintEditorModule = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet");
-	//TSharedPtr<FExtender> MenuExtender = MakeShareable(new FExtender());
-
-	//MenuExtender->AddToolBarExtension(
-	//	"Asset",
-	//	EExtensionHook::After,
-	//	nullptr,
-	//	FToolBarExtensionDelegate::CreateLambda([this](FToolBarBuilder& ToolbarBuilder)
-	//		{
-	//			ToolbarBuilder.AddToolBarButton(
-	//				FUIAction(
-	//					InitExecuteAction
-	//				),
-	//				NAME_None,
-	//				LOCTEXT("GenerateTemplate", "模版生成蓝图Mixin.ts"),
-	//				LOCTEXT("GenerateTemplateTooltip", "单击生成(文件存在不覆盖),双击强制覆盖+生成ts定义"),
-	//				FSlateIcon()
-	//			);
-	//		}));
-
-
-	////BlueprintEditorModule.GetMenuExtensibilityManager()->AddExtender(MenuExtender);
-	////auto& BlueprintEditorModule = FModuleManager::LoadModuleChecked<FBlueprintEditorModule>("Kismet");
-	//auto& ExtenderDelegates = BlueprintEditorModule.GetMenuExtensibilityManager()->GetExtenderDelegates();
-
-	//ExtenderDelegates.Add(FAssetEditorExtender::CreateLambda(
-	//	[this, MenuExtender](const TSharedRef<FUICommandList>, const TArray<UObject*> ContextSensitiveObjects)
-	//	{
-	//		this->Blueprint = ContextSensitiveObjects.Num() < 1 ? nullptr : Cast<UBlueprint>(ContextSensitiveObjects[0]);
-	//		//GetExtender(this->Blueprint);
-	//		if (this->Blueprint)
-	//		{
-	//			UE_LOG(LogTemp, Warning, TEXT("Open BlueprintPath=%s"), *this->Blueprint->GetPathName());
-	//			UBlueprint* localBlueprint = this->Blueprint;
-	//			// 用于检测双击的静态变量
-	//			static FDateTime LastClickTime;
-	//			static bool bWaitingForDoubleClick = false;
-	//			static FTimerHandle TimerHandle;
-
-	//			InitExecuteAction = FExecuteAction::CreateLambda([this, localBlueprint]()
-	//				{
-	//					const FDateTime CurrentTime = FDateTime::Now();
-	//					const FTimespan TimeSinceLastClick = CurrentTime - LastClickTime;
-	//					LastClickTime = CurrentTime;
-
-	//					// 如果是双击时间范围内
-	//					if (TimeSinceLastClick.GetTotalSeconds() < 0.3f && bWaitingForDoubleClick)
-	//					{
-	//						// 取消等待单击的计时器
-	//						GEditor->GetTimerManager()->ClearTimer(TimerHandle);
-	//						bWaitingForDoubleClick = false;
-
-	//						// 执行双击逻辑
-	//						HandleButtonClick(localBlueprint, true);
-	//					}
-	//					else
-	//					{
-	//						// 设置等待双击的计时器
-	//						bWaitingForDoubleClick = true;
-	//						GEditor->GetTimerManager()->SetTimer(
-	//							TimerHandle,
-	//							[this, localBlueprint]()
-	//							{
-	//								if (bWaitingForDoubleClick)
-	//								{
-	//									bWaitingForDoubleClick = false;
-	//									HandleButtonClick(localBlueprint, false); // 执行单击逻辑
-	//								}
-	//							},
-	//							0.3f, // 300毫秒双击检测窗口
-	//							false
-	//						);
-	//					}
-	//				});
-	//		}
-	//		else
-	//		{
-	//			UE_LOG(LogTemp, Error, TEXT("Open the blueprint to obtain the object exception"));
-	//		}
-
-	//		return MenuExtender.ToSharedRef();
-	//	}
-	//));
+	FCoreDelegates::OnPostEngineInit.AddRaw(this, &FPuertsToolModule::OnPostEngineInit);		
 }
 
 void FPuertsToolModule::HandleButtonClick(UBlueprint* targetBlueprint, bool bForceOverwrite)
