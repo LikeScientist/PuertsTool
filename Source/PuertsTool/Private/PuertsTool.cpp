@@ -39,7 +39,7 @@ void FPuertsToolModule::OnPostEngineInit()
 					),
 					NAME_None,
 					LOCTEXT("GenerateTemplate", "模版生成蓝图Mixin.ts"),
-					LOCTEXT("GenerateTemplateTooltip", "单击生成(文件存在不覆盖),双击强制覆盖+生成ts定义"),
+					LOCTEXT("GenerateTemplateTooltip", "单击生成(文件存在不覆盖),双击强制覆盖+生成ts定义\n注意：当前按钮只认上一次打开的蓝图，多个打开的蓝图之间切换去点击仍然是上一次打开蓝图（相关稳定功能请用右边的PuertsTool下拉菜单）"),
 					FSlateIcon()
 				);
 			}));
