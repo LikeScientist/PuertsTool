@@ -1,6 +1,5 @@
 ﻿#include "UnLuaEditorToolbar.h"
 #include "Misc/EngineVersionComparison.h"
-#include "UnLuaEditorCore.h"
 #include "UnLuaEditorToolbar.h"
 #include "UnLuaEditorCommands.h"
 #include "Animation/AnimInstance.h"
@@ -35,8 +34,9 @@ void FPuertsToolEditorToolbar::Initialize()
 void FPuertsToolEditorToolbar::BindCommands()
 {
     const auto& Commands = FPuertsToolEditorCommands::Get();
-    CommandList->MapAction(Commands.CreateLuaTemplate, FExecuteAction::CreateRaw(this, &FPuertsToolEditorToolbar::CreateLuaTemplate_Executed));
-    CommandList->MapAction(Commands.CopyAsRelativePath, FExecuteAction::CreateRaw(this, &FPuertsToolEditorToolbar::CopyAsRelativePath_Executed));
+    CommandList->MapAction(Commands.Puerts_Gen, FExecuteAction::CreateRaw(this, &FPuertsToolEditorToolbar::Puerts_Gen_Executed));
+    CommandList->MapAction(Commands.CreateTemplate, FExecuteAction::CreateRaw(this, &FPuertsToolEditorToolbar::CreateTemplate_Executed));    
+    CommandList->MapAction(Commands.CreateTemplate_ForceOverwrite, FExecuteAction::CreateRaw(this, &FPuertsToolEditorToolbar::CreateTemplate_ForceOverwrite_Executed));
     CommandList->MapAction(Commands.RevealInExplorer, FExecuteAction::CreateRaw(this, &FPuertsToolEditorToolbar::RevealInExplorer_Executed));
 }
 
@@ -55,9 +55,10 @@ void FPuertsToolEditorToolbar::BuildToolbar(FToolBarBuilder& ToolbarBuilder, UOb
             ContextObject = InContextObject;
             const FPuertsToolEditorCommands& Commands = FPuertsToolEditorCommands::Get();
             FMenuBuilder MenuBuilder(true, CommandList);
-            MenuBuilder.AddMenuEntry(Commands.CopyAsRelativePath, NAME_None, LOCTEXT("CopyAsRelativePath", "Copy as Relative Path"));
+            MenuBuilder.AddMenuEntry(Commands.Puerts_Gen, NAME_None, LOCTEXT("Puerts_Gen", "Generate Puerts Definitions"));
             MenuBuilder.AddMenuEntry(Commands.RevealInExplorer, NAME_None, LOCTEXT("RevealInExplorer", "Reveal in Explorer"));
-            MenuBuilder.AddMenuEntry(Commands.CreateLuaTemplate, NAME_None, LOCTEXT("CreateLuaTemplate", "Create Lua Template"));
+            MenuBuilder.AddMenuEntry(Commands.CreateTemplate, NAME_None, LOCTEXT("CreateTemplate", "Create TS Template"));
+            MenuBuilder.AddMenuEntry(Commands.CreateTemplate_ForceOverwrite, NAME_None, LOCTEXT("CreateTemplate_ForceOverwrite", "Create TS Template Force Overwrite"));
             return MenuBuilder.MakeWidget();
         }),
         LOCTEXT("PuertsTool_Label", "PuertsTool"),
@@ -105,18 +106,27 @@ TSharedRef<FExtender> FPuertsToolEditorToolbar::GetExtender(UObject* InContextOb
     return ToolbarExtender;
 }
 
-void FPuertsToolEditorToolbar::CreateLuaTemplate_Executed()
+void FPuertsToolEditorToolbar::CreateTemplate_Executed()
 {
     const auto Blueprint = Cast<UBlueprint>(ContextObject);
     if (!IsValid(Blueprint))
         return;
 
-    PuertsToolModule->HandleButtonClick(Blueprint, false);    
+    PuertsToolModule->HandleButtonClick(Blueprint, false);
+}
+
+void FPuertsToolEditorToolbar::CreateTemplate_ForceOverwrite_Executed()
+{
+    const auto Blueprint = Cast<UBlueprint>(ContextObject);
+    if (!IsValid(Blueprint))
+        return;
+
+    PuertsToolModule->HandleButtonClick(Blueprint, true);
 }
 
 void FPuertsToolEditorToolbar::RevealInExplorer_Executed()
 {
-    /*const auto Blueprint = Cast<UBlueprint>(ContextObject);
+    const auto Blueprint = Cast<UBlueprint>(ContextObject);
     if (!IsValid(Blueprint))
         return;
 
@@ -124,19 +134,7 @@ void FPuertsToolEditorToolbar::RevealInExplorer_Executed()
     if (!IsValid(TargetClass))
         return;
 
-    if (!TargetClass->ImplementsInterface(UPuertsToolInterface::StaticClass()))
-        return;
-
-    const auto Func = TargetClass->FindFunctionByName(FName("GetModuleName"));
-    if (!IsValid(Func))
-        return;
-
-    FString ModuleName;
-    const auto DefaultObject = TargetClass->GetDefaultObject();
-    DefaultObject->UObject::ProcessEvent(Func, &ModuleName);
-
-    const auto RelativePath = ModuleName.Replace(TEXT("."), TEXT("/"));
-    const auto FileName = FString::Printf(TEXT("%s%s.lua"), *GLuaSrcFullPath, *RelativePath);
+    const auto FileName = PuertsToolModule->GetCollectionOfFilePaths(Blueprint)[0];
 
     if (IFileManager::Get().FileExists(*FileName))
     {
@@ -150,10 +148,10 @@ void FPuertsToolEditorToolbar::RevealInExplorer_Executed()
         NotificationInfo.ExpireDuration = 100.0f;
         NotificationInfo.bUseThrobber = true;
         FSlateNotificationManager::Get().AddNotification(NotificationInfo);
-    }*/
+    }
 }
 
-void FPuertsToolEditorToolbar::CopyAsRelativePath_Executed() const
+void FPuertsToolEditorToolbar::Puerts_Gen_Executed() const
 {
     GEngine->Exec(GWorld, TEXT("Puerts.Gen"));//调用Puerts导出蓝图定义	
 }

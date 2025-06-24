@@ -127,47 +127,10 @@ void FPuertsToolModule::HandleButtonClick(UBlueprint* targetBlueprint, bool bFor
 		FString TemplatePath = FPaths::Combine(FPaths::ProjectPluginsDir(), TEXT("PuertsTool"), TEXT("Resources"), TEXT("TsMixinTemplate.ts"));
 		FString TemplateContent;
 		if (FFileHelper::LoadFileToString(TemplateContent, *TemplatePath))
-		{
-			FString BlueprintPath = targetBlueprint->GetPathName();
-			FString LeftS, RightS;
-			BlueprintPath.Split(".", &LeftS, &RightS);
-			FString BPFileName = RightS;//得到蓝图文件名
-
-			FString SubStr = "/Game/Blueprints/";
-			if (LeftS.Contains(SubStr))
-			{
-				LeftS.Split(SubStr, &LeftS, &RightS);
-			}
-			else
-			{
-				SubStr = "/Game/";
-				if (LeftS.Contains(SubStr))
-				{
-					LeftS.Split(SubStr, &LeftS, &RightS);
-				}
-				else//主要针对插件目录下的文件，基本不动路径
-				{
-					RightS = LeftS;
-				}
-			}
-
-			////FString BPFileName换到上面获取了
-			//TArray<FString> stringArray;
-			//RightS.ParseIntoArray(stringArray, TEXT("/"), false);
-			//FString BPFileName = stringArray[stringArray.Num() - 1];
-
-			////去掉BP_的蓝图前缀
-			//BPFileName = BPFileName.Replace(TEXT("BP_"), TEXT(""));
-			//TCHAR From = TEXT("BP_") + (*BPFileName);
-			//RightS = RightS.Replace(&From, *BPFileName);
-
-			FString TSFileName = TEXT("Mixin_") + BPFileName;
-			//ts文件增加TS_前缀
-			RightS = RightS.Replace(*BPFileName, *TSFileName);
-
-
+		{			
+			TArray<FString> tsCollectionOfFilePaths = GetCollectionOfFilePaths(targetBlueprint);
 			// 处理模板
-			FString ProcessedContent = ProcessTemplate(TemplateContent, BlueprintPath, BPFileName, TSFileName);
+			FString ProcessedContent = ProcessTemplate(TemplateContent, tsCollectionOfFilePaths[1], tsCollectionOfFilePaths[2], tsCollectionOfFilePaths[3]);
 
 
 			if (bForceOverwrite)
@@ -176,7 +139,7 @@ void FPuertsToolModule::HandleButtonClick(UBlueprint* targetBlueprint, bool bFor
 			}
 
 			// 保存文件
-			FString TsFilePath = FPaths::Combine(FPaths::ProjectDir(), TEXT("TypeScript"), TEXT("Mixin"), RightS + FString(".ts"));
+			FString TsFilePath = tsCollectionOfFilePaths[0];
 			FText Text;
 			// 检查文件是否存在且不是强制覆盖
 			if (!bForceOverwrite && FPaths::FileExists(TsFilePath))
@@ -204,6 +167,46 @@ void FPuertsToolModule::HandleButtonClick(UBlueprint* targetBlueprint, bool bFor
 	else
 		UE_LOG(LogTemp, Warning, TEXT("No active blueprint editor found"));
 
+}
+
+TArray<FString> FPuertsToolModule::GetCollectionOfFilePaths(UBlueprint* targetBlueprint)
+{
+	TArray<FString> CollectionOfFilePaths;
+	FString BlueprintPath = targetBlueprint->GetPathName();
+	FString LeftS, RightS;
+	BlueprintPath.Split(".", &LeftS, &RightS);
+	FString BPFileName = RightS;//得到蓝图文件名
+
+	FString SubStr = "/Game/Blueprints/";
+	if (LeftS.Contains(SubStr))
+	{
+		LeftS.Split(SubStr, &LeftS, &RightS);
+	}
+	else
+	{
+		SubStr = "/Game/";
+		if (LeftS.Contains(SubStr))
+		{
+			LeftS.Split(SubStr, &LeftS, &RightS);
+		}
+		else//主要针对插件目录下的文件，基本不动路径
+		{
+			RightS = LeftS;
+		}
+	}
+
+	FString TSFileName = TEXT("Mixin_") + BPFileName;
+	
+	RightS = RightS.Replace(*BPFileName, *TSFileName);
+	
+	// 保存文件
+	FString TsFilePath = FPaths::Combine(FPaths::ProjectDir(), TEXT("TypeScript"), TEXT("Mixin"), RightS + FString(".ts"));
+
+	CollectionOfFilePaths.Add(TsFilePath);
+	CollectionOfFilePaths.Add(BlueprintPath);
+	CollectionOfFilePaths.Add(BPFileName);
+	CollectionOfFilePaths.Add(TSFileName);
+	return CollectionOfFilePaths;
 }
 
 FString FPuertsToolModule::ProcessTemplate(const FString& TemplateContent, FString BlueprintPath, FString BPFileName, FString TSFileName)

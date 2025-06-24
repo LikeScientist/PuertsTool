@@ -17,13 +17,11 @@ public:
 
     virtual void Initialize();
 
-    void CreateLuaTemplate_Executed();
+    void Puerts_Gen_Executed() const;
 
-    void CopyAsRelativePath_Executed() const;
+    void CreateTemplate_ForceOverwrite_Executed();
 
-    void BindToLua_Executed() const;
-
-    void UnbindFromLua_Executed() const;
+    void CreateTemplate_Executed();    
 
     void RevealInExplorer_Executed();
 

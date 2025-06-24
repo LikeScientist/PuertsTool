@@ -11,20 +11,17 @@ class FPuertsToolModule : public IModuleInterface
 public:
 	/** IModuleInterface implementation */
 	virtual void StartupModule() override;
-	virtual void ShutdownModule() override;
-	
-	void OnPostEngineInit();
-
-	TSharedRef<FExtender> GetExtender(UObject* InContextObject);
-
-	void BuildToolbar(FToolBarBuilder& ToolbarBuilder, UObject* InContextObject);
+	virtual void ShutdownModule() override;	
 	
 	void HandleButtonClick(UBlueprint* targetBlueprint, bool bForceOverwrite);
 
+	//获取ts相关文件路径集合
+	TArray<FString> GetCollectionOfFilePaths(UBlueprint* targetBlueprint);
 public:
 	UBlueprint* Blueprint = nullptr;
 
 private:
+	void OnPostEngineInit();
 	TSharedPtr<class IAssetTypeActions> TsMixinAssetActions;
 	
 	FString ProcessTemplate(const FString& TemplateContent, FString BlueprintPath, FString BPFileName,FString TSFileName);
