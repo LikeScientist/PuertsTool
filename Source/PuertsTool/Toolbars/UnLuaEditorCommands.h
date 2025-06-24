@@ -1,4 +1,4 @@
-// Tencent is pleased to support the open source community by making UnLua available.
+// Tencent is pleased to support the open source community by making PuertsTool available.
 // 
 // Copyright (C) 2019 THL A29 Limited, a Tencent company. All rights reserved.
 //
@@ -16,11 +16,11 @@
 
 #include "Framework/Commands/Commands.h"
 
-class FUnLuaEditorCommands : public TCommands<FUnLuaEditorCommands>
+class FPuertsToolEditorCommands : public TCommands<FPuertsToolEditorCommands>
 {
 public:
-    FUnLuaEditorCommands()
-        : TCommands<FUnLuaEditorCommands>(TEXT("UnLuaEditor"), NSLOCTEXT("Contexts", "UnLuaEditor", "UnLua Editor"), NAME_None, "UnLuaEditorStyle")
+    FPuertsToolEditorCommands()
+        : TCommands<FPuertsToolEditorCommands>(TEXT("PuertsToolEditor"), NSLOCTEXT("Contexts", "PuertsToolEditor", "PuertsTool Editor"), NAME_None, "PuertsToolEditorStyle")
     {
     }
 

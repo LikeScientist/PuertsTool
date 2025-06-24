@@ -3,12 +3,12 @@
 #include "BlueprintEditor.h"
 #include <PuertsTool.h>
 
-class FUnLuaEditorToolbar
+class FPuertsToolEditorToolbar
 {
 public:
-    virtual ~FUnLuaEditorToolbar() = default;
+    virtual ~FPuertsToolEditorToolbar() = default;
 
-    FUnLuaEditorToolbar();
+    FPuertsToolEditorToolbar();
 
     TSharedRef<FUICommandList> GetCommandList() const
     {

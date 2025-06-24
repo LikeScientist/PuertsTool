@@ -22,15 +22,15 @@
 //#include "UnLuaIntelliSense.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 
-#define LOCTEXT_NAMESPACE "FUnLuaEditorModule"
+#define LOCTEXT_NAMESPACE "FPuertsToolEditorModule"
 
-FUnLuaEditorToolbar::FUnLuaEditorToolbar()
+FPuertsToolEditorToolbar::FPuertsToolEditorToolbar()
     : CommandList(new FUICommandList),
       ContextObject(nullptr)
 {
 }
 
-void FUnLuaEditorToolbar::Initialize()
+void FPuertsToolEditorToolbar::Initialize()
 {
     CommandList = MakeShared<FUICommandList>();
     ContextObject = nullptr;
@@ -38,17 +38,17 @@ void FUnLuaEditorToolbar::Initialize()
     this->PuertsToolModule = static_cast<FPuertsToolModule*>(FModuleManager::Get().GetModule("PuertsToolModule"));
 }
 
-void FUnLuaEditorToolbar::BindCommands()
+void FPuertsToolEditorToolbar::BindCommands()
 {
-    const auto& Commands = FUnLuaEditorCommands::Get();
-    CommandList->MapAction(Commands.CreateLuaTemplate, FExecuteAction::CreateRaw(this, &FUnLuaEditorToolbar::CreateLuaTemplate_Executed));
-    CommandList->MapAction(Commands.CopyAsRelativePath, FExecuteAction::CreateRaw(this, &FUnLuaEditorToolbar::CopyAsRelativePath_Executed));
-    CommandList->MapAction(Commands.BindToLua, FExecuteAction::CreateRaw(this, &FUnLuaEditorToolbar::BindToLua_Executed));
-    CommandList->MapAction(Commands.UnbindFromLua, FExecuteAction::CreateRaw(this, &FUnLuaEditorToolbar::UnbindFromLua_Executed));
-    CommandList->MapAction(Commands.RevealInExplorer, FExecuteAction::CreateRaw(this, &FUnLuaEditorToolbar::RevealInExplorer_Executed));
+    const auto& Commands = FPuertsToolEditorCommands::Get();
+    CommandList->MapAction(Commands.CreateLuaTemplate, FExecuteAction::CreateRaw(this, &FPuertsToolEditorToolbar::CreateLuaTemplate_Executed));
+    CommandList->MapAction(Commands.CopyAsRelativePath, FExecuteAction::CreateRaw(this, &FPuertsToolEditorToolbar::CopyAsRelativePath_Executed));
+    CommandList->MapAction(Commands.BindToLua, FExecuteAction::CreateRaw(this, &FPuertsToolEditorToolbar::BindToLua_Executed));
+    CommandList->MapAction(Commands.UnbindFromLua, FExecuteAction::CreateRaw(this, &FPuertsToolEditorToolbar::UnbindFromLua_Executed));
+    CommandList->MapAction(Commands.RevealInExplorer, FExecuteAction::CreateRaw(this, &FPuertsToolEditorToolbar::RevealInExplorer_Executed));
 }
 
-void FUnLuaEditorToolbar::BuildToolbar(FToolBarBuilder& ToolbarBuilder, UObject* InContextObject)
+void FPuertsToolEditorToolbar::BuildToolbar(FToolBarBuilder& ToolbarBuilder, UObject* InContextObject)
 {
     if (!InContextObject)
         return;
@@ -62,7 +62,7 @@ void FUnLuaEditorToolbar::BuildToolbar(FToolBarBuilder& ToolbarBuilder, UObject*
         {
             ContextObject = InContextObject;
             const auto BindingStatus = GetBindingStatus(Blueprint);
-            const FUnLuaEditorCommands& Commands = FUnLuaEditorCommands::Get();
+            const FPuertsToolEditorCommands& Commands = FPuertsToolEditorCommands::Get();
             FMenuBuilder MenuBuilder(true, CommandList);
             if (BindingStatus == NotBound)
             {
@@ -77,8 +77,8 @@ void FUnLuaEditorToolbar::BuildToolbar(FToolBarBuilder& ToolbarBuilder, UObject*
             }
             return MenuBuilder.MakeWidget();
         }),
-        LOCTEXT("UnLua_Label", "UnLua"),
-        LOCTEXT("UnLua_ToolTip", "UnLua"),
+        LOCTEXT("PuertsTool_Label", "PuertsTool"),
+        LOCTEXT("PuertsTool_ToolTip", "PuertsTool"),
         TAttribute<FSlateIcon>::Create([Blueprint]
         {
             const auto BindingStatus = GetBindingStatus(Blueprint);
@@ -86,22 +86,22 @@ void FUnLuaEditorToolbar::BuildToolbar(FToolBarBuilder& ToolbarBuilder, UObject*
             switch (BindingStatus)
             {
             case Unknown:
-                InStyleName = "UnLuaEditor.Status_Unknown";
+                InStyleName = "PuertsToolEditor.Status_Unknown";
                 break;
             case NotBound:
-                InStyleName = "UnLuaEditor.Status_NotBound";
+                InStyleName = "PuertsToolEditor.Status_NotBound";
                 break;
             case Bound:
-                InStyleName = "UnLuaEditor.Status_Bound";
+                InStyleName = "PuertsToolEditor.Status_Bound";
                 break;
             case BoundButInvalid:
-                InStyleName = "UnLuaEditor.Status_BoundButInvalid";
+                InStyleName = "PuertsToolEditor.Status_BoundButInvalid";
                 break;
             default:
                 check(false);
             }
 
-            return FSlateIcon("UnLuaEditorStyle", *InStyleName);
+            return FSlateIcon("PuertsToolEditorStyle", *InStyleName);
         })
     );
 
@@ -110,25 +110,25 @@ void FUnLuaEditorToolbar::BuildToolbar(FToolBarBuilder& ToolbarBuilder, UObject*
     BuildNodeMenu();
 }
 
-void FUnLuaEditorToolbar::BuildNodeMenu()
+void FPuertsToolEditorToolbar::BuildNodeMenu()
 {
     FToolMenuOwnerScoped OwnerScoped(this);
     UToolMenu* BPMenu = UToolMenus::Get()->ExtendMenu("GraphEditor.GraphNodeContextMenu.K2Node_FunctionResult");
-    BPMenu->AddDynamicSection("UnLua", FNewToolMenuDelegate::CreateLambda([this](UToolMenu* ToolMenu)
+    BPMenu->AddDynamicSection("PuertsTool", FNewToolMenuDelegate::CreateLambda([this](UToolMenu* ToolMenu)
     {
         UGraphNodeContextMenuContext* GraphNodeCtx = ToolMenu->FindContext<UGraphNodeContextMenuContext>();
         if (GraphNodeCtx && GraphNodeCtx->Graph)
         {
             if (GraphNodeCtx->Graph->GetName() == "GetModuleName")
             {
-                FToolMenuSection& UnLuaSection = ToolMenu->AddSection("UnLua", FText::FromString("UnLua"));
-                UnLuaSection.AddEntry(FToolMenuEntry::InitMenuEntryWithCommandList(FUnLuaEditorCommands::Get().RevealInExplorer, CommandList, LOCTEXT("RevealInExplorer", "Reveal in Explorer")));
+                FToolMenuSection& PuertsToolSection = ToolMenu->AddSection("PuertsTool", FText::FromString("PuertsTool"));
+                PuertsToolSection.AddEntry(FToolMenuEntry::InitMenuEntryWithCommandList(FPuertsToolEditorCommands::Get().RevealInExplorer, CommandList, LOCTEXT("RevealInExplorer", "Reveal in Explorer")));
             }
         }
     }), FToolMenuInsert(NAME_None, EToolMenuInsertType::First));
 }
 
-TSharedRef<FExtender> FUnLuaEditorToolbar::GetExtender(UObject* InContextObject)
+TSharedRef<FExtender> FPuertsToolEditorToolbar::GetExtender(UObject* InContextObject)
 {
     TSharedRef<FExtender> ToolbarExtender(new FExtender());
     const auto ExtensionDelegate = FToolBarExtensionDelegate::CreateLambda([this, InContextObject](FToolBarBuilder& ToolbarBuilder)
@@ -141,7 +141,7 @@ TSharedRef<FExtender> FUnLuaEditorToolbar::GetExtender(UObject* InContextObject)
     return ToolbarExtender;
 }
 
-void FUnLuaEditorToolbar::BindToLua_Executed() const
+void FPuertsToolEditorToolbar::BindToLua_Executed() const
 {
     /*const auto Blueprint = Cast<UBlueprint>(ContextObject);
     if (!IsValid(Blueprint))
@@ -151,13 +151,13 @@ void FUnLuaEditorToolbar::BindToLua_Executed() const
     if (!IsValid(TargetClass))
         return;
 
-    if (TargetClass->ImplementsInterface(UUnLuaInterface::StaticClass()))
+    if (TargetClass->ImplementsInterface(UPuertsToolInterface::StaticClass()))
         return;
 
 #if UE_VERSION_OLDER_THAN(5, 1, 0)
-    const auto Ok = FBlueprintEditorUtils::ImplementNewInterface(Blueprint, FName("UnLuaInterface"));
+    const auto Ok = FBlueprintEditorUtils::ImplementNewInterface(Blueprint, FName("PuertsToolInterface"));
 #else
-    const auto Ok = FBlueprintEditorUtils::ImplementNewInterface(Blueprint, FTopLevelAssetPath(UUnLuaInterface::StaticClass()));
+    const auto Ok = FBlueprintEditorUtils::ImplementNewInterface(Blueprint, FTopLevelAssetPath(UPuertsToolInterface::StaticClass()));
 #endif
     if (!Ok)
         return;
@@ -172,7 +172,7 @@ void FUnLuaEditorToolbar::BindToLua_Executed() const
     }
     else
     {
-        const auto Settings = GetDefault<UUnLuaSettings>();
+        const auto Settings = GetDefault<UPuertsToolSettings>();
         if (Settings && Settings->ModuleLocatorClass)
         {
             const auto ModuleLocator = Cast<ULuaModuleLocator>(Settings->ModuleLocatorClass->GetDefaultObject());
@@ -184,7 +184,7 @@ void FUnLuaEditorToolbar::BindToLua_Executed() const
     {
         const auto InterfaceDesc = *Blueprint->ImplementedInterfaces.FindByPredicate([](const FBPInterfaceDescription& Desc)
         {
-            return Desc.Interface == UUnLuaInterface::StaticClass();
+            return Desc.Interface == UPuertsToolInterface::StaticClass();
         });
         InterfaceDesc.Graphs[0]->Nodes[1]->Pins[1]->DefaultValue = LuaModuleName;
     }
@@ -207,7 +207,7 @@ void FUnLuaEditorToolbar::BindToLua_Executed() const
 #endif*/
 }
 
-void FUnLuaEditorToolbar::UnbindFromLua_Executed() const
+void FPuertsToolEditorToolbar::UnbindFromLua_Executed() const
 {
 //    const auto Blueprint = Cast<UBlueprint>(ContextObject);
 //    if (!IsValid(Blueprint))
@@ -217,13 +217,13 @@ void FUnLuaEditorToolbar::UnbindFromLua_Executed() const
 //    if (!IsValid(TargetClass))
 //        return;
 //
-//    if (!TargetClass->ImplementsInterface(UUnLuaInterface::StaticClass()))
+//    if (!TargetClass->ImplementsInterface(UPuertsToolInterface::StaticClass()))
 //        return;
 //
 //#if UE_VERSION_OLDER_THAN(5, 1, 0)
-//    FBlueprintEditorUtils::RemoveInterface(Blueprint, FName("UnLuaInterface"));
+//    FBlueprintEditorUtils::RemoveInterface(Blueprint, FName("PuertsToolInterface"));
 //#else
-//    FBlueprintEditorUtils::RemoveInterface(Blueprint, FTopLevelAssetPath(UUnLuaInterface::StaticClass()));
+//    FBlueprintEditorUtils::RemoveInterface(Blueprint, FTopLevelAssetPath(UPuertsToolInterface::StaticClass()));
 //#endif
 //
 //#if !UE_VERSION_OLDER_THAN(4, 26, 0)
@@ -260,7 +260,7 @@ void FUnLuaEditorToolbar::UnbindFromLua_Executed() const
 //    }
 }
 
-void FUnLuaEditorToolbar::CreateLuaTemplate_Executed()
+void FPuertsToolEditorToolbar::CreateLuaTemplate_Executed()
 {
     const auto Blueprint = Cast<UBlueprint>(ContextObject);
     if (!IsValid(Blueprint))
@@ -269,7 +269,7 @@ void FUnLuaEditorToolbar::CreateLuaTemplate_Executed()
     PuertsToolModule->HandleButtonClick(Blueprint, false);    
 }
 
-void FUnLuaEditorToolbar::RevealInExplorer_Executed()
+void FPuertsToolEditorToolbar::RevealInExplorer_Executed()
 {
     /*const auto Blueprint = Cast<UBlueprint>(ContextObject);
     if (!IsValid(Blueprint))
@@ -279,7 +279,7 @@ void FUnLuaEditorToolbar::RevealInExplorer_Executed()
     if (!IsValid(TargetClass))
         return;
 
-    if (!TargetClass->ImplementsInterface(UUnLuaInterface::StaticClass()))
+    if (!TargetClass->ImplementsInterface(UPuertsToolInterface::StaticClass()))
         return;
 
     const auto Func = TargetClass->FindFunctionByName(FName("GetModuleName"));
@@ -299,7 +299,7 @@ void FUnLuaEditorToolbar::RevealInExplorer_Executed()
     }
     else
     {
-        FNotificationInfo NotificationInfo(FText::FromString("UnLua Notification"));
+        FNotificationInfo NotificationInfo(FText::FromString("PuertsTool Notification"));
         NotificationInfo.Text = LOCTEXT("FileNotExist", "The file does not exist.");
         NotificationInfo.bFireAndForget = true;
         NotificationInfo.ExpireDuration = 100.0f;
@@ -308,7 +308,7 @@ void FUnLuaEditorToolbar::RevealInExplorer_Executed()
     }*/
 }
 
-void FUnLuaEditorToolbar::CopyAsRelativePath_Executed() const
+void FPuertsToolEditorToolbar::CopyAsRelativePath_Executed() const
 {
     GEngine->Exec(GWorld, TEXT("Puerts.Gen"));//调用Puerts导出蓝图定义	
 }

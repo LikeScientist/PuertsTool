@@ -1,4 +1,4 @@
-// Tencent is pleased to support the open source community by making UnLua available.
+// Tencent is pleased to support the open source community by making PuertsTool available.
 // 
 // Copyright (C) 2019 THL A29 Limited, a Tencent company. All rights reserved.
 //
@@ -32,10 +32,10 @@ ELuaBindingStatus GetBindingStatus(const UBlueprint* Blueprint)
     if (!IsValid(Target))
         return ELuaBindingStatus::NotBound;
 
-    /*if (!Target->ImplementsInterface(UUnLuaInterface::StaticClass()))
+    /*if (!Target->ImplementsInterface(UPuertsToolInterface::StaticClass()))
         return ELuaBindingStatus::NotBound;*/
 
-    /*const auto Settings = GetDefault<UUnLuaSettings>();
+    /*const auto Settings = GetDefault<UPuertsToolSettings>();
     if (!Settings || !Settings->ModuleLocatorClass)
         return ELuaBindingStatus::Unknown;*/
 

@@ -27,7 +27,7 @@ void FPuertsToolModule::OnPostEngineInit()
 
 void FPuertsToolModule::StartupModule()
 {
-	FUnLuaEditorCommands::Register();
+	FPuertsToolEditorCommands::Register();
 
 	FCoreDelegates::OnPostEngineInit.AddRaw(this, &FPuertsToolModule::OnPostEngineInit);
 
@@ -63,7 +63,7 @@ void FPuertsToolModule::StartupModule()
 	//	[this, MenuExtender](const TSharedRef<FUICommandList>, const TArray<UObject*> ContextSensitiveObjects)
 	//	{
 	//		this->Blueprint = ContextSensitiveObjects.Num() < 1 ? nullptr : Cast<UBlueprint>(ContextSensitiveObjects[0]);
-	//		GetExtender(this->Blueprint);
+	//		//GetExtender(this->Blueprint);
 	//		if (this->Blueprint)
 	//		{
 	//			UE_LOG(LogTemp, Warning, TEXT("Open BlueprintPath=%s"), *this->Blueprint->GetPathName());
@@ -117,48 +117,6 @@ void FPuertsToolModule::StartupModule()
 	//		return MenuExtender.ToSharedRef();
 	//	}
 	//));
-}
-
-TSharedRef<FExtender> FPuertsToolModule::GetExtender(UObject* InContextObject)
-{
-	TSharedRef<FExtender> ToolbarExtender(new FExtender());
-	const auto ExtensionDelegate = FToolBarExtensionDelegate::CreateLambda([this, InContextObject](FToolBarBuilder& ToolbarBuilder)
-		{
-			BuildToolbar(ToolbarBuilder, InContextObject);
-		});
-	ToolbarExtender->AddToolBarExtension("Debugging", EExtensionHook::After, nullptr, ExtensionDelegate);
-	return ToolbarExtender;
-}
-
-void FPuertsToolModule::BuildToolbar(FToolBarBuilder& ToolbarBuilder, UObject* InContextObject)
-{
-	if (!InContextObject)
-		return;
-
-	ToolbarBuilder.BeginSection(NAME_None);
-
-	const UBlueprint* Blueprint2 = Cast<UBlueprint>(InContextObject);
-	UE_LOG(LogTemp,Warning,TEXT("Blueprint2(%s)"),*Blueprint2->GetPathName());
-	ToolbarBuilder.AddComboButton(
-		FUIAction(),
-		FOnGetContent::CreateLambda([&, Blueprint2, InContextObject]()
-			{
-				UE_LOG(LogTemp, Warning, TEXT("FOnGetContent::CreateLambda Blueprint2(%s)"), *Blueprint2->GetPathName());
-				const TSharedRef<FUICommandList> CommandList;
-				FMenuBuilder MenuBuilder(true, CommandList);
-				MenuBuilder.AddMenuEntry(CopyAsRelativePath, NAME_None, LOCTEXT("CopyAsRelativePath", "Copy as Relative Path"));
-				MenuBuilder.AddMenuEntry(RevealInExplorer, NAME_None, LOCTEXT("RevealInExplorer", "Reveal in Explorer"));
-				MenuBuilder.AddMenuEntry(CreateLuaTemplate, NAME_None, LOCTEXT("CreateLuaTemplate", "Create Lua Template"));
-				MenuBuilder.AddMenuEntry(UnbindFromLua, NAME_None, LOCTEXT("Unbind", "Unbind"));
-				return MenuBuilder.MakeWidget();
-			}),
-		LOCTEXT("UnLua_Label", "UnLua"),
-		LOCTEXT("UnLua_ToolTip", "UnLua")
-	);
-
-	ToolbarBuilder.EndSection();
-
-	//BuildNodeMenu();
 }
 
 void FPuertsToolModule::HandleButtonClick(UBlueprint* targetBlueprint, bool bForceOverwrite)
