@@ -14,8 +14,8 @@
 #include <Kismet/GameplayStatics.h>
 #include <GameMapsSettings.h>
 #include "Kismet2/BlueprintEditorUtils.h"
-#include "../Toolbars/UnLuaEditorCommands.h"
-#include "../Toolbars/UnLuaEditorToolbar.h"
+#include "../Toolbars/PuertsToolEditorCommands.h"
+#include "../Toolbars/PuertsToolEditorToolbar.h"
 //#include "Kismet/GameplayStatics.h"
 
 #define LOCTEXT_NAMESPACE "FPuertsToolModule"
